@@ -1,0 +1,26 @@
+{
+  "name": "backend",
+  "version": "0.1.0",
+  "private": true,
+  "main": "bootstrap.js",
+  "scripts": {
+    "dev": "cross-env NODE_ENV=local mwtsc --watch --run @midwayjs/mock/app.js --kill-timeout 5000",
+    "build": "mwtsc --cleanOutDir",
+    "start": "cross-env NODE_ENV=production node bootstrap.js",
+    "lint": "tsc --noEmit",
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test test/*.test.mts"
+  },
+  "dependencies": {
+    "@midwayjs/bootstrap": "^4.2.1",
+    "@midwayjs/core": "^4.2.1",
+    "@midwayjs/koa": "^4.2.1",
+    "@midwayjs/logger": "^4.0.1"
+  },
+  "devDependencies": {
+    "@midwayjs/mock": "^4.2.1",
+    "@types/node": "^24.0.0",
+    "cross-env": "^10.1.0",
+    "mwtsc": "^1.16.0",
+    "typescript": "^5.9.3"
+  }
+}

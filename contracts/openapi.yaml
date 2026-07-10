@@ -1,0 +1,96 @@
+openapi: 3.1.0
+info:
+  title: Web Development Course API
+  version: 0.1.0
+servers:
+  - url: http://localhost:7001
+paths:
+  /api/health:
+    get:
+      operationId: getHealth
+      summary: 检查 API 状态
+      responses:
+        "200":
+          description: API 正常
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+  /api/courses:
+    get:
+      operationId: listCourses
+      summary: 获取课程列表
+      responses:
+        "200":
+          description: 课程列表
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Course"
+    post:
+      operationId: createCourse
+      summary: 创建课程
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCourse"
+      responses:
+        "200":
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Course"
+        "400":
+          description: 请求体不符合课程数据规则
+components:
+  schemas:
+    Health:
+      type: object
+      required: [status, service, timestamp]
+      properties:
+        status:
+          const: ok
+        service:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    Course:
+      type: object
+      required: [id, title, description, createdAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    CreateCourse:
+      type: object
+      additionalProperties: false
+      required: [title, description]
+      properties:
+        title:
+          type: string
+          minLength: 2
+          maxLength: 80
+        description:
+          type: string
+          minLength: 2
+          maxLength: 500

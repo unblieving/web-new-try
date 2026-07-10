@@ -1,0 +1,37 @@
+services:
+  frontend:
+    build:
+      context: ..
+      dockerfile: infra/frontend.Dockerfile
+    environment:
+      FRONTEND_PORT: 3000
+      BACKEND_INTERNAL_URL: http://backend:7001
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  backend:
+    build:
+      context: ..
+      dockerfile: infra/backend.Dockerfile
+    environment:
+      BACKEND_PORT: 7001
+      DATABASE_PATH: /app/backend/data/course-demo.sqlite
+    volumes:
+      - course-data:/app/backend/data
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:7001/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  course-data:

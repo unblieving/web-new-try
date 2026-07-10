@@ -1,0 +1,28 @@
+{
+  "name": "web-development-course",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A full-stack web development course monorepo",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently --kill-others-on-fail --names frontend,backend --prefix-colors cyan,magenta \"npm run dev --workspace frontend\" \"npm run dev --workspace backend\"",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "npm run lint && npm run test && npm run build",
+    "check:env": "node scripts/check-env.mjs"
+  },
+  "engines": {
+    "node": ">=24.14.1",
+    "npm": ">=11"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "prettier": "^3.6.2"
+  }
+}

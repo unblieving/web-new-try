@@ -1,0 +1,12 @@
+---
+description: Course monorepo conventions
+alwaysApply: true
+---
+
+- Keep examples readable for learners and explain non-obvious tradeoffs.
+- Use TypeScript in frontend and backend application code.
+- Write or update a spec under `specs/` before changing observable behavior; follow `specs/README.md`.
+- Change `contracts/openapi.yaml` before implementing any observable HTTP contract change; follow `contracts/README.md`.
+- Keep frontend, backend, tests, and the API contract synchronized in the same change.
+- Run the affected workspace tests and lint checks after editing.
+- Never commit `.env`, credentials, generated databases, or build output.
