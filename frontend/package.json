@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --port ${FRONTEND_PORT:-3000}",
+    "dev": "next dev --port 3000",
     "build": "next build --webpack",
     "start": "next start --port ${FRONTEND_PORT:-3000}",
     "lint": "eslint .",
