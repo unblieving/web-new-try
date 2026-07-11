@@ -1,11 +1,11 @@
 import { MidwayConfig } from "@midwayjs/core";
 
 export default {
-  keys: "course-demo-development-key",
+  keys: "campus-marketplace-development-key",
   koa: {
     port: Number(process.env.BACKEND_PORT ?? 7001),
   },
-  courseDatabase: {
-    path: process.env.DATABASE_PATH ?? "./data/course-demo.sqlite",
+  database: {
+    path: process.env.DATABASE_PATH ?? "./data/campus-marketplace.sqlite",
   },
 } as MidwayConfig;
