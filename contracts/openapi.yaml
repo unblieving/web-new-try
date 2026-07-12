@@ -1,9 +1,11 @@
 openapi: 3.1.0
 info:
-  title: Web Development Course API
-  version: 0.1.0
+  title: Campus Marketplace API
+  version: 1.0.0
+  description: 校园二手交易与闲置物品流转平台 API
 servers:
   - url: http://localhost:7001
+
 paths:
   /api/health:
     get:
@@ -16,13 +18,84 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Health"
-  /api/courses:
-    get:
-      operationId: listCourses
-      summary: 获取课程列表
+
+  /api/auth/register:
+    post:
+      operationId: register
+      summary: 用户注册
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterInput"
+      responses:
+        "201":
+          description: 注册成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: 输入无效
+        "409":
+          description: 学号已存在
+
+  /api/auth/login:
+    post:
+      operationId: login
+      summary: 用户登录
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
       responses:
         "200":
-          description: 课程列表
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: 学号或密码错误
+
+  /api/auth/me:
+    get:
+      operationId: getMe
+      summary: 获取当前用户信息
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: 当前用户信息
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/User"
+        "401":
+          description: 未认证
+
+  /api/categories:
+    get:
+      operationId: listCategories
+      summary: 获取分类树
+      responses:
+        "200":
+          description: 分类树
           content:
             application/json:
               schema:
@@ -32,18 +105,626 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: "#/components/schemas/Course"
+                      $ref: "#/components/schemas/CategoryTree"
+
+  /api/categories/flat:
+    get:
+      operationId: listCategoriesFlat
+      summary: 获取扁平分类列表
+      responses:
+        "200":
+          description: 扁平分类列表
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Category"
+
+  /api/categories/{id}:
+    get:
+      operationId: getCategory
+      summary: 获取分类详情
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: 分类详情
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Category"
+        "404":
+          description: 分类不存在
+
+  /api/items:
+    get:
+      operationId: listItems
+      summary: 浏览商品列表
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: pageSize
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - name: categoryId
+          in: query
+          schema: { type: integer }
+        - name: keyword
+          in: query
+          schema: { type: string }
+        - name: sortBy
+          in: query
+          schema: { type: string, enum: [created_at, price] }
+        - name: sortOrder
+          in: query
+          schema: { type: string, enum: [asc, desc] }
+      responses:
+        "200":
+          description: 商品列表
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItemPage"
     post:
-      operationId: createCourse
-      summary: 创建课程
+      operationId: createItem
+      summary: 发布商品
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateCourse"
+              $ref: "#/components/schemas/CreateItemInput"
+      responses:
+        "201":
+          description: 发布成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Item"
+        "400":
+          description: 输入无效
+        "401":
+          description: 未认证
+
+  /api/items/{id}:
+    get:
+      operationId: getItem
+      summary: 获取商品详情
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
       responses:
         "200":
+          description: 商品详情
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Item"
+        "404":
+          description: 商品不存在
+    put:
+      operationId: updateItem
+      summary: 更新商品
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateItemInput"
+      responses:
+        "200":
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Item"
+        "403":
+          description: 无权操作
+        "404":
+          description: 商品不存在
+    delete:
+      operationId: deleteItem
+      summary: 删除商品
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: 删除成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      success:
+                        type: boolean
+        "403":
+          description: 无权操作
+        "404":
+          description: 商品不存在
+
+  /api/items/my:
+    get:
+      operationId: listMyItems
+      summary: 获取我发布的商品
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: pageSize
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending_review, listed, reserved, sold, rejected, removed]
+      responses:
+        "200":
+          description: 我的商品列表
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItemPage"
+        "401":
+          description: 未认证
+
+  /api/orders:
+    get:
+      operationId: listMyOrders
+      summary: 获取我的订单
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: pageSize
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending_payment, paid, completed, cancelled]
+      responses:
+        "200":
+          description: 我的订单列表
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderPage"
+        "401":
+          description: 未认证
+    post:
+      operationId: createOrder
+      summary: 发起购买
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderInput"
+      responses:
+        "201":
+          description: 订单创建成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Order"
+        "400":
+          description: 库存不足或商品不可购买
+        "401":
+          description: 未认证
+        "404":
+          description: 商品不存在
+
+  /api/orders/{id}:
+    get:
+      operationId: getOrder
+      summary: 获取订单详情
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: 订单详情
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Order"
+        "403":
+          description: 无权查看
+        "404":
+          description: 订单不存在
+
+  /api/orders/{id}/pay:
+    post:
+      operationId: payOrder
+      summary: 模拟支付
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: 支付成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Order"
+        "400":
+          description: 订单状态不允许支付
+        "403":
+          description: 无权操作
+
+  /api/orders/{id}/confirm:
+    post:
+      operationId: confirmOrder
+      summary: 确认收货
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: 确认成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Order"
+        "400":
+          description: 订单状态不允许确认
+        "403":
+          description: 无权操作
+
+  /api/orders/{id}/cancel:
+    post:
+      operationId: cancelOrder
+      summary: 取消订单
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: 取消成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Order"
+        "400":
+          description: 订单状态不允许取消
+        "403":
+          description: 无权操作
+
+  /api/favorites:
+    get:
+      operationId: listFavorites
+      summary: 获取我的收藏
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: 收藏列表
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Favorite"
+        "401":
+          description: 未认证
+
+  /api/favorites/{itemId}:
+    post:
+      operationId: addFavorite
+      summary: 收藏商品
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "201":
+          description: 收藏成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Favorite"
+        "404":
+          description: 商品不存在
+    delete:
+      operationId: removeFavorite
+      summary: 取消收藏
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: 取消成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      success:
+                        type: boolean
+        "404":
+          description: 收藏记录不存在
+
+  /api/favorites/check/{itemId}:
+    get:
+      operationId: checkFavorite
+      summary: 检查是否已收藏
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: 检查结果
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [isFavorited]
+                    properties:
+                      isFavorited:
+                        type: boolean
+
+  /api/admin/items:
+    get:
+      operationId: adminListItems
+      summary: 管理员获取所有商品
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: pageSize
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending_review, listed, reserved, sold, rejected, removed]
+      responses:
+        "200":
+          description: 商品列表
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItemPage"
+        "403":
+          description: 需要管理员权限
+
+  /api/admin/items/{id}/approve:
+    post:
+      operationId: approveItem
+      summary: 审核通过商品
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: 审核通过
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Item"
+        "400":
+          description: 商品状态不允许审核
+        "403":
+          description: 需要管理员权限
+
+  /api/admin/items/{id}/reject:
+    post:
+      operationId: rejectItem
+      summary: 审核拒绝商品
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+                  minLength: 1
+      responses:
+        "200":
+          description: 审核拒绝
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Item"
+        "400":
+          description: 商品状态不允许审核
+        "403":
+          description: 需要管理员权限
+
+  /api/admin/items/{id}/remove:
+    post:
+      operationId: removeItem
+      summary: 管理员下架商品
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: 下架成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Item"
+        "403":
+          description: 需要管理员权限
+
+  /api/admin/categories:
+    post:
+      operationId: adminCreateCategory
+      summary: 管理员创建分类
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCategoryInput"
+      responses:
+        "201":
           description: 创建成功
           content:
             application/json:
@@ -52,10 +733,81 @@ paths:
                 required: [data]
                 properties:
                   data:
-                    $ref: "#/components/schemas/Course"
+                    $ref: "#/components/schemas/Category"
+        "403":
+          description: 需要管理员权限
+
+  /api/admin/categories/{id}:
+    put:
+      operationId: adminUpdateCategory
+      summary: 管理员更新分类
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCategoryInput"
+      responses:
+        "200":
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Category"
+        "403":
+          description: 需要管理员权限
+        "404":
+          description: 分类不存在
+    delete:
+      operationId: adminDeleteCategory
+      summary: 管理员删除分类
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: 删除成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      success:
+                        type: boolean
         "400":
-          description: 请求体不符合课程数据规则
+          description: 分类下有子分类或商品
+        "403":
+          description: 需要管理员权限
+        "404":
+          description: 分类不存在
+
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+
   schemas:
     Health:
       type: object
@@ -68,29 +820,297 @@ components:
         timestamp:
           type: string
           format: date-time
-    Course:
+
+    User:
       type: object
-      required: [id, title, description, createdAt]
+      required: [id, studentId, username, role, createdAt]
       properties:
         id:
+          type: integer
+        studentId:
+          type: string
+        username:
+          type: string
+        role:
+          type: string
+          enum: [user, admin]
+        createdAt:
+          type: string
+          format: date-time
+
+    RegisterInput:
+      type: object
+      additionalProperties: false
+      required: [studentId, username, password]
+      properties:
+        studentId:
+          type: string
+          minLength: 1
+          maxLength: 30
+        username:
+          type: string
+          minLength: 1
+          maxLength: 50
+        password:
+          type: string
+          minLength: 6
+          maxLength: 100
+
+    LoginInput:
+      type: object
+      additionalProperties: false
+      required: [studentId, password]
+      properties:
+        studentId:
+          type: string
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      required: [token, user]
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+
+    Category:
+      type: object
+      required: [id, name, parentId, sortOrder]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        parentId:
+          type: [integer, "null"]
+        sortOrder:
+          type: integer
+
+    CategoryTree:
+      allOf:
+        - $ref: "#/components/schemas/Category"
+        - type: object
+          properties:
+            children:
+              type: array
+              items:
+                $ref: "#/components/schemas/Category"
+
+    CreateCategoryInput:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        parentId:
+          type: [integer, "null"]
+        sortOrder:
+          type: integer
+
+    UpdateCategoryInput:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        sortOrder:
+          type: integer
+
+    Item:
+      type: object
+      required: [id, sellerId, categoryId, title, price, quantity, availableQuantity, status, images, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        sellerId:
+          type: integer
+        categoryId:
           type: integer
         title:
           type: string
         description:
+          type: [string, "null"]
+        price:
+          type: number
+          minimum: 0
+        quantity:
+          type: integer
+          minimum: 0
+        availableQuantity:
+          type: integer
+          minimum: 0
+        status:
           type: string
+          enum: [pending_review, listed, reserved, sold, rejected, removed]
+        rejectReason:
+          type: [string, "null"]
+        images:
+          type: array
+          items:
+            type: string
         createdAt:
           type: string
           format: date-time
-    CreateCourse:
+        updatedAt:
+          type: string
+          format: date-time
+        seller:
+          type: object
+          properties:
+            id:
+              type: integer
+            username:
+              type: string
+            studentId:
+              type: string
+        category:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+
+    CreateItemInput:
       type: object
       additionalProperties: false
-      required: [title, description]
+      required: [categoryId, title, price]
       properties:
+        categoryId:
+          type: integer
         title:
           type: string
-          minLength: 2
-          maxLength: 80
+          minLength: 1
+          maxLength: 100
         description:
           type: string
-          minLength: 2
-          maxLength: 500
+          maxLength: 2000
+        price:
+          type: number
+          minimum: 0.01
+        quantity:
+          type: integer
+          minimum: 1
+          default: 1
+        images:
+          type: array
+          items:
+            type: string
+
+    UpdateItemInput:
+      type: object
+      additionalProperties: false
+      properties:
+        categoryId:
+          type: integer
+        title:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 2000
+        price:
+          type: number
+          minimum: 0.01
+        quantity:
+          type: integer
+          minimum: 1
+        images:
+          type: array
+          items:
+            type: string
+
+    ItemPage:
+      type: object
+      required: [data, total, page, pageSize]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Item"
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+
+    Order:
+      type: object
+      required: [id, orderNo, buyerId, itemId, quantity, totalPrice, status, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        orderNo:
+          type: string
+        buyerId:
+          type: integer
+        itemId:
+          type: integer
+        quantity:
+          type: integer
+        totalPrice:
+          type: number
+        status:
+          type: string
+          enum: [pending_payment, paid, completed, cancelled]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        item:
+          $ref: "#/components/schemas/Item"
+
+    CreateOrderInput:
+      type: object
+      additionalProperties: false
+      required: [itemId]
+      properties:
+        itemId:
+          type: integer
+        quantity:
+          type: integer
+          minimum: 1
+          default: 1
+
+    OrderPage:
+      type: object
+      required: [data, total, page, pageSize]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Order"
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+
+    Favorite:
+      type: object
+      required: [id, userId, itemId, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        itemId:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        item:
+          $ref: "#/components/schemas/Item"
