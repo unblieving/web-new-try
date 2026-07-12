@@ -56,7 +56,7 @@ export class FavoriteController {
     const { userId } = getAuthState(this.ctx);
     const isFavorited = this.favoriteService.isFavorited(
       userId,
-      parseInt(itemId, 10)
+      parseInt(itemId, 10),
     );
     return { data: { isFavorited } };
   }

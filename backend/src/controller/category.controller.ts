@@ -63,7 +63,11 @@ export class AdminCategoryController {
     }
     const parentId = (input.parentId as number) ?? null;
     const sortOrder = (input.sortOrder as number) ?? 0;
-    const category = this.categoryService.create(name.trim(), parentId, sortOrder);
+    const category = this.categoryService.create(
+      name.trim(),
+      parentId,
+      sortOrder,
+    );
     this.ctx.status = 201;
     return { data: category };
   }
@@ -82,7 +86,7 @@ export class AdminCategoryController {
     const category = this.categoryService.update(
       parseInt(id, 10),
       name.trim(),
-      sortOrder
+      sortOrder,
     );
     if (!category) {
       throw new httpError.NotFoundError("分类不存在");

@@ -20,7 +20,9 @@ export class CategoryService {
 
   listTree(): Category[] {
     const rows = this.db
-      .prepare("SELECT id, name, parent_id, sort_order FROM categories ORDER BY sort_order, id")
+      .prepare(
+        "SELECT id, name, parent_id, sort_order FROM categories ORDER BY sort_order, id",
+      )
       .all() as CategoryRow[];
 
     const all = rows.map(mapCategory);
@@ -48,21 +50,27 @@ export class CategoryService {
 
   listFlat(): Category[] {
     const rows = this.db
-      .prepare("SELECT id, name, parent_id, sort_order FROM categories ORDER BY sort_order, id")
+      .prepare(
+        "SELECT id, name, parent_id, sort_order FROM categories ORDER BY sort_order, id",
+      )
       .all() as CategoryRow[];
     return rows.map(mapCategory);
   }
 
   findById(id: number): Category | null {
     const row = this.db
-      .prepare("SELECT id, name, parent_id, sort_order FROM categories WHERE id = ?")
+      .prepare(
+        "SELECT id, name, parent_id, sort_order FROM categories WHERE id = ?",
+      )
       .get(id) as CategoryRow | undefined;
     return row ? mapCategory(row) : null;
   }
 
   create(name: string, parentId: number | null, sortOrder: number): Category {
     const result = this.db
-      .prepare("INSERT INTO categories (name, parent_id, sort_order) VALUES (?, ?, ?)")
+      .prepare(
+        "INSERT INTO categories (name, parent_id, sort_order) VALUES (?, ?, ?)",
+      )
       .run(name, parentId, sortOrder);
     return this.findById(Number(result.lastInsertRowid))!;
   }
@@ -93,7 +101,9 @@ export class CategoryService {
       throw new Error("该分类下有商品，无法删除");
     }
 
-    const result = this.db.prepare("DELETE FROM categories WHERE id = ?").run(id);
+    const result = this.db
+      .prepare("DELETE FROM categories WHERE id = ?")
+      .run(id);
     return result.changes > 0;
   }
 }

@@ -31,9 +31,10 @@ export class OrderService {
 
   createOrder(buyerId: number, input: CreateOrderInput): Order {
     const itemId = requirePositiveInt(input.itemId, "商品ID");
-    const quantity = input.quantity !== undefined
-      ? requirePositiveInt(input.quantity, "数量")
-      : 1;
+    const quantity =
+      input.quantity !== undefined
+        ? requirePositiveInt(input.quantity, "数量")
+        : 1;
 
     // Check item exists
     const item = this.itemService.findById(itemId);
@@ -65,7 +66,8 @@ export class OrderService {
       // Re-check stock inside transaction (critical for concurrency safety)
       const currentRow = this.db
         .prepare("SELECT available_quantity, status FROM items WHERE id = ?")
-        .get(itemId) as { available_quantity: number; status: string } | undefined;
+        .get(itemId) as
+        { available_quantity: number; status: string } | undefined;
 
       if (!currentRow || currentRow.available_quantity < quantity) {
         throw new Error("库存不足，商品可能已被他人购买");
@@ -77,11 +79,14 @@ export class OrderService {
 
       // Deduct stock
       const newAvailable = currentRow.available_quantity - quantity;
-      const newStatus = newAvailable === 0 && item.quantity === quantity ? "reserved" : currentRow.status;
+      const newStatus =
+        newAvailable === 0 && item.quantity === quantity
+          ? "reserved"
+          : currentRow.status;
 
       this.db
         .prepare(
-          "UPDATE items SET available_quantity = ?, status = ?, updated_at = datetime('now') WHERE id = ?"
+          "UPDATE items SET available_quantity = ?, status = ?, updated_at = datetime('now') WHERE id = ?",
         )
         .run(newAvailable, newStatus, itemId);
 
@@ -89,7 +94,7 @@ export class OrderService {
       const result = this.db
         .prepare(
           `INSERT INTO orders (order_no, buyer_id, item_id, quantity, total_price)
-           VALUES (?, ?, ?, ?, ?)`
+           VALUES (?, ?, ?, ?, ?)`,
         )
         .run(orderNo, buyerId, itemId, quantity, totalPrice);
 
@@ -115,7 +120,7 @@ export class OrderService {
 
     this.db
       .prepare(
-        "UPDATE orders SET status = 'paid', updated_at = datetime('now') WHERE id = ?"
+        "UPDATE orders SET status = 'paid', updated_at = datetime('now') WHERE id = ?",
       )
       .run(orderId);
 
@@ -138,7 +143,7 @@ export class OrderService {
     try {
       this.db
         .prepare(
-          "UPDATE orders SET status = 'completed', updated_at = datetime('now') WHERE id = ?"
+          "UPDATE orders SET status = 'completed', updated_at = datetime('now') WHERE id = ?",
         )
         .run(orderId);
 
@@ -172,7 +177,7 @@ export class OrderService {
     try {
       this.db
         .prepare(
-          "UPDATE orders SET status = 'cancelled', updated_at = datetime('now') WHERE id = ?"
+          "UPDATE orders SET status = 'cancelled', updated_at = datetime('now') WHERE id = ?",
         )
         .run(orderId);
 
@@ -205,16 +210,15 @@ export class OrderService {
         `SELECT o.* FROM orders o
          JOIN items i ON o.item_id = i.id
          WHERE i.seller_id = ?
-         ORDER BY o.created_at DESC`
+         ORDER BY o.created_at DESC`,
       )
       .all(sellerId) as OrderRow[];
     return rows.map((r) => this.mapOrderWithDetails(r));
   }
 
   findById(id: number): Order | null {
-    const row = this.db
-      .prepare("SELECT * FROM orders WHERE id = ?")
-      .get(id) as OrderRow | undefined;
+    const row = this.db.prepare("SELECT * FROM orders WHERE id = ?").get(id) as
+      OrderRow | undefined;
     return row ? this.mapOrderWithDetails(row) : null;
   }
 

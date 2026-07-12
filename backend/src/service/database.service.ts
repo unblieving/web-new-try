@@ -103,16 +103,34 @@ export class DatabaseService {
     if (categoryCount.total === 0) {
       // Seed categories (two-level structure)
       const insertCategory = this.database.prepare(
-        "INSERT INTO categories (name, parent_id, sort_order) VALUES (?, ?, ?)"
+        "INSERT INTO categories (name, parent_id, sort_order) VALUES (?, ?, ?)",
       );
 
       // Level 1 categories
       insertCategory.run("教材", null, 0);
-      const textbookId = Number((this.database.prepare("SELECT last_insert_rowid() AS id").get() as { id: number }).id);
+      const textbookId = Number(
+        (
+          this.database.prepare("SELECT last_insert_rowid() AS id").get() as {
+            id: number;
+          }
+        ).id,
+      );
       insertCategory.run("电子产品", null, 1);
-      const electronicsId = Number((this.database.prepare("SELECT last_insert_rowid() AS id").get() as { id: number }).id);
+      const electronicsId = Number(
+        (
+          this.database.prepare("SELECT last_insert_rowid() AS id").get() as {
+            id: number;
+          }
+        ).id,
+      );
       insertCategory.run("生活用品", null, 2);
-      const dailyId = Number((this.database.prepare("SELECT last_insert_rowid() AS id").get() as { id: number }).id);
+      const dailyId = Number(
+        (
+          this.database.prepare("SELECT last_insert_rowid() AS id").get() as {
+            id: number;
+          }
+        ).id,
+      );
 
       // Level 2 categories
       insertCategory.run("课本", textbookId, 0);

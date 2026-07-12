@@ -56,7 +56,7 @@ export class FavoriteService {
   findByUser(userId: number): Favorite[] {
     const rows = this.db
       .prepare(
-        "SELECT * FROM favorites WHERE user_id = ? ORDER BY created_at DESC"
+        "SELECT * FROM favorites WHERE user_id = ? ORDER BY created_at DESC",
       )
       .all(userId) as FavoriteRow[];
     return rows.map((r) => this.mapFavorite(r));

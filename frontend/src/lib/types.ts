@@ -23,12 +23,7 @@ export interface Category {
 
 // --- Item ---
 export type ItemStatus =
-  | "pending_review"
-  | "listed"
-  | "reserved"
-  | "sold"
-  | "rejected"
-  | "removed";
+  "pending_review" | "listed" | "reserved" | "sold" | "rejected" | "removed";
 
 export interface Item {
   id: number;
@@ -68,10 +63,7 @@ export interface ItemListQuery {
 
 // --- Order ---
 export type OrderStatus =
-  | "pending_payment"
-  | "paid"
-  | "completed"
-  | "cancelled";
+  "pending_payment" | "paid" | "completed" | "cancelled";
 
 export interface Order {
   id: number;

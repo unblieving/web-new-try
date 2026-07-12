@@ -1,11 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Inject,
-  Post,
-  httpError,
-} from "@midwayjs/core";
+import { Body, Controller, Get, Inject, Post, httpError } from "@midwayjs/core";
 import { Context } from "@midwayjs/koa";
 import { AuthService } from "../service/auth.service";
 import { AuthMiddleware, getAuthState } from "../middleware/auth.middleware";

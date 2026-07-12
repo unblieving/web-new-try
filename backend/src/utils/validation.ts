@@ -9,7 +9,7 @@ export function requireString(
   value: unknown,
   fieldName: string,
   minLen = 1,
-  maxLen = 255
+  maxLen = 255,
 ): string {
   if (typeof value !== "string" || value.trim().length === 0) {
     throw new ValidationError(`${fieldName}不能为空`);
@@ -27,7 +27,7 @@ export function requireString(
 export function optionalString(
   value: unknown,
   fieldName: string,
-  maxLen = 255
+  maxLen = 255,
 ): string | null {
   if (value === undefined || value === null) {
     return null;
@@ -49,7 +49,10 @@ export function requirePositiveInt(value: unknown, fieldName: string): number {
   return num;
 }
 
-export function requirePositiveNumber(value: unknown, fieldName: string): number {
+export function requirePositiveNumber(
+  value: unknown,
+  fieldName: string,
+): number {
   const num = typeof value === "number" ? value : parseFloat(String(value));
   if (isNaN(num) || num <= 0) {
     throw new ValidationError(`${fieldName}必须是正数`);

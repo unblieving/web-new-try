@@ -138,7 +138,9 @@ export default function AdminPage() {
       {actionMsg && (
         <div
           className={`mb-4 text-sm p-3 rounded ${
-            actionMsg.includes("成功") || actionMsg.includes("通过") || actionMsg.includes("已")
+            actionMsg.includes("成功") ||
+            actionMsg.includes("通过") ||
+            actionMsg.includes("已")
               ? "bg-green-50 text-green-600"
               : "bg-red-50 text-red-600"
           }`}
@@ -154,10 +156,7 @@ export default function AdminPage() {
       ) : (
         <div className="space-y-3">
           {items.map((item) => (
-            <div
-              key={item.id}
-              className="border rounded-lg p-4"
-            >
+            <div key={item.id} className="border rounded-lg p-4">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 bg-gray-100 rounded flex-shrink-0 flex items-center justify-center overflow-hidden">
                   {item.images.length > 0 ? (

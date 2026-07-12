@@ -62,7 +62,8 @@ export class ItemService {
       params.push(kw, kw);
     }
 
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+    const whereClause =
+      conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
     const sortBy = query.sortBy === "price" ? "i.price" : "i.created_at";
     const sortOrder = query.sortOrder === "asc" ? "ASC" : "DESC";
@@ -75,7 +76,7 @@ export class ItemService {
 
     const rows = this.db
       .prepare(
-        `SELECT i.* FROM items i ${whereClause} ORDER BY ${sortBy} ${sortOrder} LIMIT ? OFFSET ?`
+        `SELECT i.* FROM items i ${whereClause} ORDER BY ${sortBy} ${sortOrder} LIMIT ? OFFSET ?`,
       )
       .all(...params, pageSize, offset) as ItemRow[];
 
@@ -101,7 +102,9 @@ export class ItemService {
 
   listPendingReview(): Item[] {
     const rows = this.db
-      .prepare("SELECT * FROM items WHERE status = 'pending_review' ORDER BY created_at ASC")
+      .prepare(
+        "SELECT * FROM items WHERE status = 'pending_review' ORDER BY created_at ASC",
+      )
       .all() as ItemRow[];
     return rows.map((r) => this.mapItemWithDetails(r));
   }
@@ -119,9 +122,8 @@ export class ItemService {
   }
 
   findById(id: number): Item | null {
-    const row = this.db
-      .prepare("SELECT * FROM items WHERE id = ?")
-      .get(id) as ItemRow | undefined;
+    const row = this.db.prepare("SELECT * FROM items WHERE id = ?").get(id) as
+      ItemRow | undefined;
     return row ? this.mapItemWithDetails(row) : null;
   }
 
@@ -129,16 +131,17 @@ export class ItemService {
     const title = requireString(input.title, "商品标题", 1, 100);
     const description = optionalString(input.description, "商品描述", 2000);
     const price = requirePositiveNumber(input.price, "价格");
-    const quantity = input.quantity !== undefined
-      ? requirePositiveInt(input.quantity, "数量")
-      : 1;
+    const quantity =
+      input.quantity !== undefined
+        ? requirePositiveInt(input.quantity, "数量")
+        : 1;
     const categoryId = requirePositiveInt(input.categoryId, "分类");
     const images = input.images ?? [];
 
     const result = this.db
       .prepare(
         `INSERT INTO items (seller_id, category_id, title, description, price, quantity, available_quantity, images)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         sellerId,
@@ -148,13 +151,17 @@ export class ItemService {
         price,
         quantity,
         quantity,
-        JSON.stringify(images)
+        JSON.stringify(images),
       );
 
     return this.findById(Number(result.lastInsertRowid))!;
   }
 
-  update(sellerId: number, itemId: number, input: UpdateItemInput): Item | null {
+  update(
+    sellerId: number,
+    itemId: number,
+    input: UpdateItemInput,
+  ): Item | null {
     const existing = this.findById(itemId);
     if (!existing) return null;
     if (existing.sellerId !== sellerId) {
@@ -164,32 +171,40 @@ export class ItemService {
       throw new Error("该商品状态不允许修改");
     }
 
-    const title = input.title !== undefined
-      ? requireString(input.title, "商品标题", 1, 100)
-      : existing.title;
-    const description = input.description !== undefined
-      ? optionalString(input.description, "商品描述", 2000)
-      : existing.description;
-    const price = input.price !== undefined
-      ? requirePositiveNumber(input.price, "价格")
-      : existing.price;
-    const quantity = input.quantity !== undefined
-      ? requirePositiveInt(input.quantity, "数量")
-      : existing.quantity;
-    const categoryId = input.categoryId !== undefined
-      ? requirePositiveInt(input.categoryId, "分类")
-      : existing.categoryId;
+    const title =
+      input.title !== undefined
+        ? requireString(input.title, "商品标题", 1, 100)
+        : existing.title;
+    const description =
+      input.description !== undefined
+        ? optionalString(input.description, "商品描述", 2000)
+        : existing.description;
+    const price =
+      input.price !== undefined
+        ? requirePositiveNumber(input.price, "价格")
+        : existing.price;
+    const quantity =
+      input.quantity !== undefined
+        ? requirePositiveInt(input.quantity, "数量")
+        : existing.quantity;
+    const categoryId =
+      input.categoryId !== undefined
+        ? requirePositiveInt(input.categoryId, "分类")
+        : existing.categoryId;
     const images = input.images ?? existing.images;
 
     // If quantity increased, also increase available_quantity
     const quantityDiff = quantity - existing.quantity;
-    const availableQuantity = Math.max(0, existing.availableQuantity + quantityDiff);
+    const availableQuantity = Math.max(
+      0,
+      existing.availableQuantity + quantityDiff,
+    );
 
     this.db
       .prepare(
         `UPDATE items SET title = ?, description = ?, price = ?, quantity = ?,
          available_quantity = ?, category_id = ?, images = ?, updated_at = datetime('now')
-         WHERE id = ?`
+         WHERE id = ?`,
       )
       .run(
         title,
@@ -199,7 +214,7 @@ export class ItemService {
         availableQuantity,
         categoryId,
         JSON.stringify(images),
-        itemId
+        itemId,
       );
 
     return this.findById(itemId);
@@ -212,7 +227,9 @@ export class ItemService {
       throw new Error("无权删除他人商品");
     }
     this.db
-      .prepare("UPDATE items SET status = 'removed', updated_at = datetime('now') WHERE id = ?")
+      .prepare(
+        "UPDATE items SET status = 'removed', updated_at = datetime('now') WHERE id = ?",
+      )
       .run(itemId);
     return true;
   }
@@ -225,7 +242,9 @@ export class ItemService {
       throw new Error("只能审核待审核状态的商品");
     }
     this.db
-      .prepare("UPDATE items SET status = 'listed', updated_at = datetime('now') WHERE id = ?")
+      .prepare(
+        "UPDATE items SET status = 'listed', updated_at = datetime('now') WHERE id = ?",
+      )
       .run(itemId);
     return this.findById(itemId);
   }
@@ -238,7 +257,7 @@ export class ItemService {
     }
     this.db
       .prepare(
-        "UPDATE items SET status = 'rejected', reject_reason = ?, updated_at = datetime('now') WHERE id = ?"
+        "UPDATE items SET status = 'rejected', reject_reason = ?, updated_at = datetime('now') WHERE id = ?",
       )
       .run(reason, itemId);
     return this.findById(itemId);
@@ -246,17 +265,22 @@ export class ItemService {
 
   adminRemove(itemId: number): boolean {
     const result = this.db
-      .prepare("UPDATE items SET status = 'removed', updated_at = datetime('now') WHERE id = ?")
+      .prepare(
+        "UPDATE items SET status = 'removed', updated_at = datetime('now') WHERE id = ?",
+      )
       .run(itemId);
     return result.changes > 0;
   }
 
   // Concurrency-safe: try to reserve stock
-  tryReserveStock(itemId: number, quantity: number): { success: boolean; message?: string } {
+  tryReserveStock(
+    itemId: number,
+    quantity: number,
+  ): { success: boolean; message?: string } {
     // Use a transaction with IMMEDIATE to acquire write lock
     const stmt = this.db.prepare(
       `UPDATE items SET available_quantity = available_quantity - ?, status = CASE WHEN available_quantity - ? = 0 AND quantity = 1 THEN 'reserved' ELSE status END, updated_at = datetime('now')
-       WHERE id = ? AND available_quantity >= ? AND status IN ('listed', 'reserved')`
+       WHERE id = ? AND available_quantity >= ? AND status IN ('listed', 'reserved')`,
     );
     const result = stmt.run(quantity, quantity, itemId, quantity);
     if (result.changes === 0) {
@@ -268,14 +292,16 @@ export class ItemService {
   releaseStock(itemId: number, quantity: number): void {
     this.db
       .prepare(
-        `UPDATE items SET available_quantity = available_quantity + ?, status = 'listed', updated_at = datetime('now') WHERE id = ?`
+        `UPDATE items SET available_quantity = available_quantity + ?, status = 'listed', updated_at = datetime('now') WHERE id = ?`,
       )
       .run(quantity, itemId);
   }
 
   markSold(itemId: number): void {
     this.db
-      .prepare("UPDATE items SET status = 'sold', updated_at = datetime('now') WHERE id = ?")
+      .prepare(
+        "UPDATE items SET status = 'sold', updated_at = datetime('now') WHERE id = ?",
+      )
       .run(itemId);
   }
 
@@ -284,7 +310,8 @@ export class ItemService {
 
     const seller = this.db
       .prepare("SELECT id, username, student_id FROM users WHERE id = ?")
-      .get(row.seller_id) as { id: number; username: string; student_id: string } | undefined;
+      .get(row.seller_id) as
+      { id: number; username: string; student_id: string } | undefined;
 
     const category = this.db
       .prepare("SELECT id, name FROM categories WHERE id = ?")
@@ -305,7 +332,11 @@ export class ItemService {
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       seller: seller
-        ? { id: seller.id, username: seller.username, studentId: seller.student_id }
+        ? {
+            id: seller.id,
+            username: seller.username,
+            studentId: seller.student_id,
+          }
         : undefined,
       category: category ? { id: category.id, name: category.name } : undefined,
     };

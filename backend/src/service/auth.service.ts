@@ -37,7 +37,7 @@ export class AuthService {
     const passwordHash = hashPassword(password);
     const result = this.db
       .prepare(
-        "INSERT INTO users (student_id, username, password_hash) VALUES (?, ?, ?)"
+        "INSERT INTO users (student_id, username, password_hash) VALUES (?, ?, ?)",
       )
       .run(studentId, username, passwordHash);
 
@@ -60,9 +60,8 @@ export class AuthService {
   }
 
   findById(id: number): User | null {
-    const row = this.db
-      .prepare("SELECT * FROM users WHERE id = ?")
-      .get(id) as UserRow | undefined;
+    const row = this.db.prepare("SELECT * FROM users WHERE id = ?").get(id) as
+      UserRow | undefined;
     return row ? mapUser(row) : null;
   }
 }

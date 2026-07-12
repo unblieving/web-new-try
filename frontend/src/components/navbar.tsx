@@ -39,9 +39,7 @@ export function Navbar() {
                   管理后台
                 </Link>
               )}
-              <span className="text-sm text-gray-500">
-                {user.username}
-              </span>
+              <span className="text-sm text-gray-500">{user.username}</span>
               <button
                 onClick={logout}
                 className="text-sm text-red-500 hover:text-red-700"

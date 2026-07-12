@@ -117,11 +117,13 @@ backend/test/
 ## Task 1: Database Service & Schema Initialization
 
 **Files:**
+
 - Create: `backend/src/repository/database.service.ts`
 - Modify: `backend/src/config/config.default.ts`
 - Modify: `backend/src/interface.ts`
 
 **Interfaces:**
+
 - Consumes: nothing
 - Produces: `DatabaseService` class with `getDatabase(): DatabaseSync` method; schema tables created on `@Init()`
 
@@ -210,7 +212,9 @@ describe("Database schema", () => {
   });
 
   test("users table exists with correct columns", () => {
-    const info = db.prepare("PRAGMA table_info(users)").all() as Array<{ name: string }>;
+    const info = db.prepare("PRAGMA table_info(users)").all() as Array<{
+      name: string;
+    }>;
     const columns = info.map((c) => c.name);
     assert.ok(columns.includes("id"));
     assert.ok(columns.includes("student_id"));
@@ -221,7 +225,9 @@ describe("Database schema", () => {
   });
 
   test("items table exists with correct columns", () => {
-    const info = db.prepare("PRAGMA table_info(items)").all() as Array<{ name: string }>;
+    const info = db.prepare("PRAGMA table_info(items)").all() as Array<{
+      name: string;
+    }>;
     const columns = info.map((c) => c.name);
     assert.ok(columns.includes("id"));
     assert.ok(columns.includes("seller_id"));
@@ -234,7 +240,9 @@ describe("Database schema", () => {
   });
 
   test("orders table exists with correct columns", () => {
-    const info = db.prepare("PRAGMA table_info(orders)").all() as Array<{ name: string }>;
+    const info = db.prepare("PRAGMA table_info(orders)").all() as Array<{
+      name: string;
+    }>;
     const columns = info.map((c) => c.name);
     assert.ok(columns.includes("id"));
     assert.ok(columns.includes("item_id"));
@@ -244,16 +252,32 @@ describe("Database schema", () => {
   });
 
   test("favorites table has unique constraint on user_id + item_id", () => {
-    const result = db.prepare("INSERT INTO users (student_id, username, password_hash) VALUES ('s1', 'u1', 'h1')").run();
+    const result = db
+      .prepare(
+        "INSERT INTO users (student_id, username, password_hash) VALUES ('s1', 'u1', 'h1')",
+      )
+      .run();
     const userId = result.lastInsertRowid;
-    const catResult = db.prepare("INSERT INTO categories (name) VALUES ('test')").run();
+    const catResult = db
+      .prepare("INSERT INTO categories (name) VALUES ('test')")
+      .run();
     const catId = catResult.lastInsertRowid;
-    const itemResult = db.prepare("INSERT INTO items (seller_id, category_id, title, price) VALUES (?, ?, 'test', 10)").run(userId, catId);
+    const itemResult = db
+      .prepare(
+        "INSERT INTO items (seller_id, category_id, title, price) VALUES (?, ?, 'test', 10)",
+      )
+      .run(userId, catId);
     const itemId = itemResult.lastInsertRowid;
 
-    db.prepare("INSERT INTO favorites (user_id, item_id) VALUES (?, ?)").run(userId, itemId);
+    db.prepare("INSERT INTO favorites (user_id, item_id) VALUES (?, ?)").run(
+      userId,
+      itemId,
+    );
     assert.throws(() => {
-      db.prepare("INSERT INTO favorites (user_id, item_id) VALUES (?, ?)").run(userId, itemId);
+      db.prepare("INSERT INTO favorites (user_id, item_id) VALUES (?, ?)").run(
+        userId,
+        itemId,
+      );
     });
   });
 });
@@ -366,7 +390,7 @@ export class DatabaseService {
     if (row.total === 0) {
       this.database
         .prepare(
-          "INSERT INTO users (student_id, username, password_hash, role) VALUES (?, ?, ?, ?)"
+          "INSERT INTO users (student_id, username, password_hash, role) VALUES (?, ?, ?, ?)",
         )
         .run("admin", "管理员", "$2b$10$placeholder_hash_replace_me", "admin");
     }
@@ -379,7 +403,7 @@ export class DatabaseService {
     if (row.total > 0) return;
 
     const insertCategory = this.database.prepare(
-      "INSERT INTO categories (name, parent_id, sort_order) VALUES (?, ?, ?)"
+      "INSERT INTO categories (name, parent_id, sort_order) VALUES (?, ?, ?)",
     );
 
     const categories = [
@@ -539,12 +563,14 @@ git commit -m "feat: add database service with marketplace schema and seed data"
 ## Task 2: Auth Service & Middleware
 
 **Files:**
+
 - Create: `backend/src/service/auth.service.ts`
 - Create: `backend/src/repository/user.repository.ts`
 - Create: `backend/src/middleware/auth.middleware.ts`
 - Create: `backend/src/utils/validation.ts`
 
 **Interfaces:**
+
 - Consumes: `DatabaseService.getDatabase()` from Task 1
 - Produces: `AuthService` with `register()`, `login()`, `verifyToken()`, `getCurrentUser()`; `UserRepository` with `findByStudentId()`, `findById()`, `create()`; `authMiddleware` guard; `requireAuth()` and `requireAdmin()` helpers
 
@@ -567,9 +593,21 @@ export class ValidationError extends Error {
   }
 }
 
-export function requireString(value: unknown, field: string, minLen = 1, maxLen = 255): string {
-  if (typeof value !== "string" || value.trim().length < minLen || value.trim().length > maxLen) {
-    throw new ValidationError(field, `${field} 必须是 ${minLen}-${maxLen} 个字符`);
+export function requireString(
+  value: unknown,
+  field: string,
+  minLen = 1,
+  maxLen = 255,
+): string {
+  if (
+    typeof value !== "string" ||
+    value.trim().length < minLen ||
+    value.trim().length > maxLen
+  ) {
+    throw new ValidationError(
+      field,
+      `${field} 必须是 ${minLen}-${maxLen} 个字符`,
+    );
   }
   return value.trim();
 }
@@ -590,7 +628,11 @@ export function requirePositiveInt(value: unknown, field: string): number {
   return num;
 }
 
-export function optionalString(value: unknown, field: string, maxLen = 2000): string | null {
+export function optionalString(
+  value: unknown,
+  field: string,
+  maxLen = 2000,
+): string | null {
   if (value === undefined || value === null) return null;
   if (typeof value !== "string") {
     throw new ValidationError(field, `${field} 必须是字符串`);
@@ -632,14 +674,18 @@ export class UserRepository {
 
   findById(id: number): User | null {
     const row = this.db
-      .prepare("SELECT id, student_id, username, password_hash, role, created_at FROM users WHERE id = ?")
+      .prepare(
+        "SELECT id, student_id, username, password_hash, role, created_at FROM users WHERE id = ?",
+      )
       .get(id) as UserRow | undefined;
     return row ? mapUser(row) : null;
   }
 
   findByStudentId(studentId: string): (User & { passwordHash: string }) | null {
     const row = this.db
-      .prepare("SELECT id, student_id, username, password_hash, role, created_at FROM users WHERE student_id = ?")
+      .prepare(
+        "SELECT id, student_id, username, password_hash, role, created_at FROM users WHERE student_id = ?",
+      )
       .get(studentId) as UserRow | undefined;
     if (!row) return null;
     return { ...mapUser(row), passwordHash: row.password_hash };
@@ -647,7 +693,9 @@ export class UserRepository {
 
   create(studentId: string, username: string, passwordHash: string): User {
     const result = this.db
-      .prepare("INSERT INTO users (student_id, username, password_hash) VALUES (?, ?, ?)")
+      .prepare(
+        "INSERT INTO users (student_id, username, password_hash) VALUES (?, ?, ?)",
+      )
       .run(studentId, username, passwordHash);
     return this.findById(Number(result.lastInsertRowid))!;
   }
@@ -828,7 +876,9 @@ describe("Auth logic (unit)", () => {
 
   test("JWT token can be signed and verified", () => {
     const secret = "test-secret";
-    const token = sign({ userId: 1, role: "user" }, secret, { expiresIn: "1h" });
+    const token = sign({ userId: 1, role: "user" }, secret, {
+      expiresIn: "1h",
+    });
     const { verify } = require("jsonwebtoken");
     const payload = verify(token, secret);
     assert.equal(payload.userId, 1);
@@ -836,9 +886,13 @@ describe("Auth logic (unit)", () => {
   });
 
   test("duplicate student_id is rejected", () => {
-    db.prepare("INSERT INTO users (student_id, username, password_hash) VALUES (?, ?, ?)").run("2024001", "Alice", "hash");
+    db.prepare(
+      "INSERT INTO users (student_id, username, password_hash) VALUES (?, ?, ?)",
+    ).run("2024001", "Alice", "hash");
     assert.throws(() => {
-      db.prepare("INSERT INTO users (student_id, username, password_hash) VALUES (?, ?, ?)").run("2024001", "Bob", "hash");
+      db.prepare(
+        "INSERT INTO users (student_id, username, password_hash) VALUES (?, ?, ?)",
+      ).run("2024001", "Bob", "hash");
     });
   });
 });
@@ -861,9 +915,11 @@ git commit -m "feat: add auth service, user repository, and JWT middleware"
 ## Task 3: Auth Controller (Register, Login, Me)
 
 **Files:**
+
 - Create: `backend/src/controller/auth.controller.ts`
 
 **Interfaces:**
+
 - Consumes: `AuthService.register()`, `AuthService.login()`, `AuthService.getCurrentUser()`, `AuthMiddleware`, `getAuthState()` from Task 2
 - Produces: `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`
 
@@ -872,14 +928,7 @@ git commit -m "feat: add auth service, user repository, and JWT middleware"
 Create `backend/src/controller/auth.controller.ts`:
 
 ```typescript
-import {
-  Body,
-  Controller,
-  Get,
-  Inject,
-  Post,
-  httpError,
-} from "@midwayjs/core";
+import { Body, Controller, Get, Inject, Post, httpError } from "@midwayjs/core";
 import { Context } from "@midwayjs/koa";
 import { AuthService } from "../service/auth.service";
 import { AuthMiddleware, getAuthState } from "../middleware/auth.middleware";
@@ -996,11 +1045,13 @@ git commit -m "feat: add auth controller with register, login, logout, me endpoi
 ## Task 4: Category Repository & Admin Category Controller
 
 **Files:**
+
 - Create: `backend/src/repository/category.repository.ts`
 - Create: `backend/src/service/admin.service.ts`
 - Create: `backend/src/controller/admin.controller.ts`
 
 **Interfaces:**
+
 - Consumes: `DatabaseService` from Task 1, `AuthMiddleware`, `requireAdmin()` from Task 2
 - Produces: `CategoryRepository` with `findAll()`, `findTree()`, `findById()`, `create()`, `update()`, `delete()`, `hasItems()`; `AdminService`; `GET/POST/PATCH/DELETE /api/admin/categories`
 
@@ -1032,7 +1083,9 @@ export class CategoryRepository {
 
   findAll(): Category[] {
     const rows = this.db
-      .prepare("SELECT id, name, parent_id, sort_order FROM categories ORDER BY sort_order, id")
+      .prepare(
+        "SELECT id, name, parent_id, sort_order FROM categories ORDER BY sort_order, id",
+      )
       .all() as CategoryRow[];
     return rows.map(mapCategory);
   }
@@ -1063,14 +1116,18 @@ export class CategoryRepository {
 
   findById(id: number): Category | null {
     const row = this.db
-      .prepare("SELECT id, name, parent_id, sort_order FROM categories WHERE id = ?")
+      .prepare(
+        "SELECT id, name, parent_id, sort_order FROM categories WHERE id = ?",
+      )
       .get(id) as CategoryRow | undefined;
     return row ? mapCategory(row) : null;
   }
 
   create(name: string, parentId: number | null, sortOrder: number): Category {
     const result = this.db
-      .prepare("INSERT INTO categories (name, parent_id, sort_order) VALUES (?, ?, ?)")
+      .prepare(
+        "INSERT INTO categories (name, parent_id, sort_order) VALUES (?, ?, ?)",
+      )
       .run(name, parentId, sortOrder);
     return this.findById(Number(result.lastInsertRowid))!;
   }
@@ -1083,7 +1140,9 @@ export class CategoryRepository {
   }
 
   delete(id: number): boolean {
-    const result = this.db.prepare("DELETE FROM categories WHERE id = ?").run(id);
+    const result = this.db
+      .prepare("DELETE FROM categories WHERE id = ?")
+      .run(id);
     return result.changes > 0;
   }
 
@@ -1141,21 +1200,33 @@ export class AdminService {
     return this.categoryRepository.findAll();
   }
 
-  createCategory(name: string, parentId: number | null, sortOrder: number): Category {
+  createCategory(
+    name: string,
+    parentId: number | null,
+    sortOrder: number,
+  ): Category {
     const validName = requireString(name, "分类名称", 1, 50);
     if (parentId !== null && parentId !== undefined) {
       const parent = this.categoryRepository.findById(parentId);
       if (!parent) throw new Error("父分类不存在");
       if (parent.parentId !== null) throw new Error("最多支持两级分类");
     }
-    return this.categoryRepository.create(validName, parentId ?? null, sortOrder ?? 0);
+    return this.categoryRepository.create(
+      validName,
+      parentId ?? null,
+      sortOrder ?? 0,
+    );
   }
 
   updateCategory(id: number, name: string, sortOrder: number): Category | null {
     const validName = requireString(name, "分类名称", 1, 50);
     const category = this.categoryRepository.findById(id);
     if (!category) throw new Error("分类不存在");
-    return this.categoryRepository.update(id, validName, sortOrder ?? category.sortOrder);
+    return this.categoryRepository.update(
+      id,
+      validName,
+      sortOrder ?? category.sortOrder,
+    );
   }
 
   deleteCategory(id: number): void {
@@ -1173,7 +1244,10 @@ export class AdminService {
 
   // --- Item review ---
 
-  getPendingItems(page: number, pageSize: number): { data: Item[]; total: number } {
+  getPendingItems(
+    page: number,
+    pageSize: number,
+  ): { data: Item[]; total: number } {
     return this.itemRepository.findByStatus("pending_review", page, pageSize);
   }
 
@@ -1224,16 +1298,21 @@ export class ItemRepository {
   }
 
   findById(id: number): Item | null {
-    const row = this.db
-      .prepare("SELECT * FROM items WHERE id = ?")
-      .get(id) as ItemRow | undefined;
+    const row = this.db.prepare("SELECT * FROM items WHERE id = ?").get(id) as
+      ItemRow | undefined;
     return row ? mapItem(row) : null;
   }
 
-  findByStatus(status: string, page: number, pageSize: number): { data: Item[]; total: number } {
+  findByStatus(
+    status: string,
+    page: number,
+    pageSize: number,
+  ): { data: Item[]; total: number } {
     const offset = (page - 1) * pageSize;
     const rows = this.db
-      .prepare("SELECT * FROM items WHERE status = ? ORDER BY created_at DESC LIMIT ? OFFSET ?")
+      .prepare(
+        "SELECT * FROM items WHERE status = ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
+      )
       .all(status, pageSize, offset) as ItemRow[];
     const totalRow = this.db
       .prepare("SELECT COUNT(*) AS total FROM items WHERE status = ?")
@@ -1263,7 +1342,9 @@ export class ItemRepository {
     }
 
     const rows = this.db
-      .prepare(`SELECT * FROM items ${where} ORDER BY ${sortBy} ${sortOrder} LIMIT ? OFFSET ?`)
+      .prepare(
+        `SELECT * FROM items ${where} ORDER BY ${sortBy} ${sortOrder} LIMIT ? OFFSET ?`,
+      )
       .all(...params, pageSize, offset) as ItemRow[];
 
     const totalRow = this.db
@@ -1273,10 +1354,16 @@ export class ItemRepository {
     return { data: rows.map(mapItem), total: totalRow.total, page, pageSize };
   }
 
-  findBySeller(sellerId: number, page: number, pageSize: number): PaginatedResult<Item> {
+  findBySeller(
+    sellerId: number,
+    page: number,
+    pageSize: number,
+  ): PaginatedResult<Item> {
     const offset = (page - 1) * pageSize;
     const rows = this.db
-      .prepare("SELECT * FROM items WHERE seller_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?")
+      .prepare(
+        "SELECT * FROM items WHERE seller_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
+      )
       .all(sellerId, pageSize, offset) as ItemRow[];
     const totalRow = this.db
       .prepare("SELECT COUNT(*) AS total FROM items WHERE seller_id = ?")
@@ -1296,7 +1383,7 @@ export class ItemRepository {
     const result = this.db
       .prepare(
         `INSERT INTO items (seller_id, category_id, title, description, price, quantity, available_quantity, images)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         input.sellerId,
@@ -1311,25 +1398,29 @@ export class ItemRepository {
     return this.findById(Number(result.lastInsertRowid))!;
   }
 
-  update(id: number, input: {
-    categoryId?: number;
-    title?: string;
-    description?: string;
-    price?: number;
-    quantity?: number;
-    images?: string;
-  }): Item | null {
+  update(
+    id: number,
+    input: {
+      categoryId?: number;
+      title?: string;
+      description?: string;
+      price?: number;
+      quantity?: number;
+      images?: string;
+    },
+  ): Item | null {
     const existing = this.findById(id);
     if (!existing) return null;
 
-    const quantityDiff = (input.quantity ?? existing.quantity) - existing.quantity;
+    const quantityDiff =
+      (input.quantity ?? existing.quantity) - existing.quantity;
     this.db
       .prepare(
         `UPDATE items SET
           category_id = ?, title = ?, description = ?, price = ?,
           quantity = ?, available_quantity = available_quantity + ?,
           images = ?, updated_at = datetime('now')
-         WHERE id = ?`
+         WHERE id = ?`,
       )
       .run(
         input.categoryId ?? existing.categoryId,
@@ -1351,14 +1442,18 @@ export class ItemRepository {
 
   updateStatus(id: number, status: string): Item | null {
     this.db
-      .prepare("UPDATE items SET status = ?, updated_at = datetime('now') WHERE id = ?")
+      .prepare(
+        "UPDATE items SET status = ?, updated_at = datetime('now') WHERE id = ?",
+      )
       .run(status, id);
     return this.findById(id);
   }
 
   updateRejectReason(id: number, reason: string | null): void {
     this.db
-      .prepare("UPDATE items SET reject_reason = ?, updated_at = datetime('now') WHERE id = ?")
+      .prepare(
+        "UPDATE items SET reject_reason = ?, updated_at = datetime('now') WHERE id = ?",
+      )
       .run(reason, id);
   }
 
@@ -1369,7 +1464,7 @@ export class ItemRepository {
   decrementStock(itemId: number, quantity: number): boolean {
     const result = this.db
       .prepare(
-        "UPDATE items SET available_quantity = available_quantity - ?, status = CASE WHEN available_quantity - ? = 0 AND quantity = ? THEN 'reserved' ELSE status END, updated_at = datetime('now') WHERE id = ? AND available_quantity >= ? AND status = 'listed'"
+        "UPDATE items SET available_quantity = available_quantity - ?, status = CASE WHEN available_quantity - ? = 0 AND quantity = ? THEN 'reserved' ELSE status END, updated_at = datetime('now') WHERE id = ? AND available_quantity >= ? AND status = 'listed'",
       )
       .run(quantity, quantity, quantity, itemId, quantity);
     return result.changes > 0;
@@ -1381,14 +1476,16 @@ export class ItemRepository {
   restoreStock(itemId: number, quantity: number): void {
     this.db
       .prepare(
-        "UPDATE items SET available_quantity = available_quantity + ?, status = CASE WHEN status = 'reserved' THEN 'listed' ELSE status END, updated_at = datetime('now') WHERE id = ?"
+        "UPDATE items SET available_quantity = available_quantity + ?, status = CASE WHEN status = 'reserved' THEN 'listed' ELSE status END, updated_at = datetime('now') WHERE id = ?",
       )
       .run(quantity, itemId);
   }
 
   markAsSold(itemId: number): void {
     this.db
-      .prepare("UPDATE items SET status = 'sold', updated_at = datetime('now') WHERE id = ?")
+      .prepare(
+        "UPDATE items SET status = 'sold', updated_at = datetime('now') WHERE id = ?",
+      )
       .run(itemId);
   }
 }
@@ -1438,7 +1535,11 @@ import {
 } from "@midwayjs/core";
 import { Context } from "@midwayjs/koa";
 import { AdminService } from "../service/admin.service";
-import { AuthMiddleware, getAuthState, requireAdmin } from "../middleware/auth.middleware";
+import {
+  AuthMiddleware,
+  getAuthState,
+  requireAdmin,
+} from "../middleware/auth.middleware";
 import { ValidationError } from "../utils/validation";
 
 @Controller("/api/admin", { middleware: [AuthMiddleware] })
@@ -1452,7 +1553,10 @@ export class AdminController {
   // --- Item review ---
 
   @Get("/items")
-  async listPendingItems(@Query("page") page?: string, @Query("pageSize") pageSize?: string) {
+  async listPendingItems(
+    @Query("page") page?: string,
+    @Query("pageSize") pageSize?: string,
+  ) {
     if (!requireAdmin(this.ctx)) {
       throw new httpError.ForbiddenError("需要管理员权限");
     }
@@ -1501,7 +1605,10 @@ export class AdminController {
       throw new httpError.ForbiddenError("需要管理员权限");
     }
     try {
-      const { name, parentId, sortOrder } = (body ?? {}) as Record<string, unknown>;
+      const { name, parentId, sortOrder } = (body ?? {}) as Record<
+        string,
+        unknown
+      >;
       const category = this.adminService.createCategory(
         name as string,
         parentId as number | null,
@@ -1556,7 +1663,10 @@ export class AdminController {
       this.adminService.deleteCategory(id);
       this.ctx.status = 204;
     } catch (err) {
-      if (err instanceof Error && (err.message.includes("子分类") || err.message.includes("关联商品"))) {
+      if (
+        err instanceof Error &&
+        (err.message.includes("子分类") || err.message.includes("关联商品"))
+      ) {
         throw new httpError.ConflictError(err.message);
       }
       throw err;
@@ -1624,32 +1734,65 @@ describe("Admin logic (unit)", () => {
   });
 
   test("category tree structure", () => {
-    db.prepare("INSERT INTO categories (name, parent_id, sort_order) VALUES (?, ?, ?)").run("教材", null, 0);
-    const parentId = Number(db.prepare("SELECT last_insert_rowid() AS id").get().id);
-    db.prepare("INSERT INTO categories (name, parent_id, sort_order) VALUES (?, ?, ?)").run("课本", parentId, 0);
-    db.prepare("INSERT INTO categories (name, parent_id, sort_order) VALUES (?, ?, ?)").run("笔记", parentId, 1);
+    db.prepare(
+      "INSERT INTO categories (name, parent_id, sort_order) VALUES (?, ?, ?)",
+    ).run("教材", null, 0);
+    const parentId = Number(
+      db.prepare("SELECT last_insert_rowid() AS id").get().id,
+    );
+    db.prepare(
+      "INSERT INTO categories (name, parent_id, sort_order) VALUES (?, ?, ?)",
+    ).run("课本", parentId, 0);
+    db.prepare(
+      "INSERT INTO categories (name, parent_id, sort_order) VALUES (?, ?, ?)",
+    ).run("笔记", parentId, 1);
 
-    const children = db.prepare("SELECT * FROM categories WHERE parent_id = ?").all(parentId);
+    const children = db
+      .prepare("SELECT * FROM categories WHERE parent_id = ?")
+      .all(parentId);
     assert.equal(children.length, 2);
   });
 
   test("cannot delete category with items", () => {
-    const catResult = db.prepare("INSERT INTO categories (name) VALUES (?)").run("测试分类");
+    const catResult = db
+      .prepare("INSERT INTO categories (name) VALUES (?)")
+      .run("测试分类");
     const catId = Number(catResult.lastInsertRowid);
-    const userResult = db.prepare("INSERT INTO users (student_id, username, password_hash) VALUES (?, ?, ?)").run("s1", "u1", "h1");
+    const userResult = db
+      .prepare(
+        "INSERT INTO users (student_id, username, password_hash) VALUES (?, ?, ?)",
+      )
+      .run("s1", "u1", "h1");
     const userId = Number(userResult.lastInsertRowid);
-    db.prepare("INSERT INTO items (seller_id, category_id, title, price) VALUES (?, ?, ?, ?)").run(userId, catId, "test", 10);
+    db.prepare(
+      "INSERT INTO items (seller_id, category_id, title, price) VALUES (?, ?, ?, ?)",
+    ).run(userId, catId, "test", 10);
 
-    const itemCount = db.prepare("SELECT COUNT(*) AS total FROM items WHERE category_id = ?").get(catId);
-    assert.ok(itemCount.total > 0, "Category has items, should not be deletable");
+    const itemCount = db
+      .prepare("SELECT COUNT(*) AS total FROM items WHERE category_id = ?")
+      .get(catId);
+    assert.ok(
+      itemCount.total > 0,
+      "Category has items, should not be deletable",
+    );
   });
 
   test("item status transitions", () => {
-    const userResult = db.prepare("INSERT INTO users (student_id, username, password_hash) VALUES (?, ?, ?)").run("s2", "u2", "h2");
+    const userResult = db
+      .prepare(
+        "INSERT INTO users (student_id, username, password_hash) VALUES (?, ?, ?)",
+      )
+      .run("s2", "u2", "h2");
     const userId = Number(userResult.lastInsertRowid);
-    const catResult = db.prepare("INSERT INTO categories (name) VALUES (?)").run("测试");
+    const catResult = db
+      .prepare("INSERT INTO categories (name) VALUES (?)")
+      .run("测试");
     const catId = Number(catResult.lastInsertRowid);
-    const itemResult = db.prepare("INSERT INTO items (seller_id, category_id, title, price, status) VALUES (?, ?, ?, ?, ?)").run(userId, catId, "test", 10, "pending_review");
+    const itemResult = db
+      .prepare(
+        "INSERT INTO items (seller_id, category_id, title, price, status) VALUES (?, ?, ?, ?, ?)",
+      )
+      .run(userId, catId, "test", 10, "pending_review");
     const itemId = Number(itemResult.lastInsertRowid);
 
     // Approve
@@ -1658,8 +1801,12 @@ describe("Admin logic (unit)", () => {
     assert.equal(item.status, "listed");
 
     // Reject with reason
-    db.prepare("UPDATE items SET status = 'rejected', reject_reason = ? WHERE id = ?").run("信息不完整", itemId);
-    item = db.prepare("SELECT status, reject_reason FROM items WHERE id = ?").get(itemId);
+    db.prepare(
+      "UPDATE items SET status = 'rejected', reject_reason = ? WHERE id = ?",
+    ).run("信息不完整", itemId);
+    item = db
+      .prepare("SELECT status, reject_reason FROM items WHERE id = ?")
+      .get(itemId);
     assert.equal(item.status, "rejected");
     assert.equal(item.reject_reason, "信息不完整");
   });
@@ -1683,10 +1830,12 @@ git commit -m "feat: add category repository, item repository, admin service and
 ## Task 5: Item Controller (CRUD + Browse)
 
 **Files:**
+
 - Create: `backend/src/service/item.service.ts`
 - Create: `backend/src/controller/item.controller.ts`
 
 **Interfaces:**
+
 - Consumes: `ItemRepository` from Task 4, `AuthMiddleware`, `getAuthState()` from Task 2, `CategoryRepository` from Task 4
 - Produces: `GET /api/items`, `GET /api/items/:id`, `POST /api/items`, `PATCH /api/items/:id`, `DELETE /api/items/:id`, `GET /api/items?categoryId=&keyword=&page=&pageSize=`
 
@@ -1730,7 +1879,11 @@ export class ItemService {
     return this.enrichItem(item);
   }
 
-  getBySeller(sellerId: number, page: number, pageSize: number): PaginatedResult<Item> {
+  getBySeller(
+    sellerId: number,
+    page: number,
+    pageSize: number,
+  ): PaginatedResult<Item> {
     return this.itemRepository.findBySeller(sellerId, page, pageSize);
   }
 
@@ -1738,7 +1891,9 @@ export class ItemService {
     const title = requireString(input.title, "标题", 1, 100);
     const description = optionalString(input.description, "描述", 5000);
     const price = requirePositiveNumber(input.price, "价格");
-    const quantity = input.quantity ? requirePositiveInt(input.quantity, "数量") : 1;
+    const quantity = input.quantity
+      ? requirePositiveInt(input.quantity, "数量")
+      : 1;
 
     if (!input.categoryId) {
       throw new Error("请选择分类");
@@ -1760,23 +1915,32 @@ export class ItemService {
     });
   }
 
-  update(sellerId: number, itemId: number, input: UpdateItemInput): Item | null {
+  update(
+    sellerId: number,
+    itemId: number,
+    input: UpdateItemInput,
+  ): Item | null {
     const existing = this.itemRepository.findById(itemId);
     if (!existing) return null;
     if (existing.sellerId !== sellerId) throw new Error("无权操作");
 
     const updateData: Record<string, unknown> = {};
-    if (input.title !== undefined) updateData.title = requireString(input.title, "标题", 1, 100);
-    if (input.description !== undefined) updateData.description = optionalString(input.description, "描述", 5000);
-    if (input.price !== undefined) updateData.price = requirePositiveNumber(input.price, "价格");
-    if (input.quantity !== undefined) updateData.quantity = requirePositiveInt(input.quantity, "数量");
+    if (input.title !== undefined)
+      updateData.title = requireString(input.title, "标题", 1, 100);
+    if (input.description !== undefined)
+      updateData.description = optionalString(input.description, "描述", 5000);
+    if (input.price !== undefined)
+      updateData.price = requirePositiveNumber(input.price, "价格");
+    if (input.quantity !== undefined)
+      updateData.quantity = requirePositiveInt(input.quantity, "数量");
     if (input.categoryId !== undefined) {
       const category = this.categoryRepository.findById(input.categoryId);
       if (!category) throw new Error("分类不存在");
       if (category.parentId === null) throw new Error("请选择二级分类");
       updateData.categoryId = input.categoryId;
     }
-    if (input.images !== undefined) updateData.images = JSON.stringify(input.images);
+    if (input.images !== undefined)
+      updateData.images = JSON.stringify(input.images);
 
     return this.itemRepository.update(itemId, updateData);
   }
@@ -1793,7 +1957,8 @@ export class ItemService {
     const db = this.itemRepository["databaseService"].getDatabase();
     const seller = db
       .prepare("SELECT id, username, student_id FROM users WHERE id = ?")
-      .get(item.sellerId) as { id: number; username: string; student_id: string } | undefined;
+      .get(item.sellerId) as
+      { id: number; username: string; student_id: string } | undefined;
     const category = db
       .prepare("SELECT id, name FROM categories WHERE id = ?")
       .get(item.categoryId) as { id: number; name: string } | undefined;
@@ -1801,7 +1966,11 @@ export class ItemService {
     return {
       ...item,
       seller: seller
-        ? { id: seller.id, username: seller.username, studentId: seller.student_id }
+        ? {
+            id: seller.id,
+            username: seller.username,
+            studentId: seller.student_id,
+          }
         : undefined,
       category: category ? { id: category.id, name: category.name } : undefined,
     };
@@ -1921,7 +2090,10 @@ export class ItemController {
   }
 
   @Get("/my/list", { middleware: [AuthMiddleware] })
-  async myItems(@Query("page") page?: string, @Query("pageSize") pageSize?: string) {
+  async myItems(
+    @Query("page") page?: string,
+    @Query("pageSize") pageSize?: string,
+  ) {
     const { userId } = getAuthState(this.ctx);
     const p = parseInt(page ?? "1", 10) || 1;
     const ps = Math.min(100, parseInt(pageSize ?? "20", 10) || 20);
@@ -1984,10 +2156,17 @@ describe("Item logic (unit)", () => {
       );
     `);
     // Seed data
-    db.prepare("INSERT INTO users (student_id, username, password_hash) VALUES ('s1', 'Alice', 'h1')").run();
+    db.prepare(
+      "INSERT INTO users (student_id, username, password_hash) VALUES ('s1', 'Alice', 'h1')",
+    ).run();
     db.prepare("INSERT INTO categories (name) VALUES ('教材')").run();
-    const parentId = Number(db.prepare("SELECT last_insert_rowid() AS id").get().id);
-    db.prepare("INSERT INTO categories (name, parent_id) VALUES (?, ?)").run("课本", parentId);
+    const parentId = Number(
+      db.prepare("SELECT last_insert_rowid() AS id").get().id,
+    );
+    db.prepare("INSERT INTO categories (name, parent_id) VALUES (?, ?)").run(
+      "课本",
+      parentId,
+    );
   });
 
   after(() => {
@@ -1996,63 +2175,91 @@ describe("Item logic (unit)", () => {
   });
 
   test("create item with default status pending_review", () => {
-    const childCat = db.prepare("SELECT id FROM categories WHERE parent_id IS NOT NULL").get() as { id: number };
-    const result = db.prepare(
-      "INSERT INTO items (seller_id, category_id, title, price, quantity, available_quantity) VALUES (?, ?, ?, ?, ?, ?)"
-    ).run(1, childCat.id, "高等数学", 25.0, 1, 1);
-    const item = db.prepare("SELECT * FROM items WHERE id = ?").get(result.lastInsertRowid) as any;
+    const childCat = db
+      .prepare("SELECT id FROM categories WHERE parent_id IS NOT NULL")
+      .get() as { id: number };
+    const result = db
+      .prepare(
+        "INSERT INTO items (seller_id, category_id, title, price, quantity, available_quantity) VALUES (?, ?, ?, ?, ?, ?)",
+      )
+      .run(1, childCat.id, "高等数学", 25.0, 1, 1);
+    const item = db
+      .prepare("SELECT * FROM items WHERE id = ?")
+      .get(result.lastInsertRowid) as any;
     assert.equal(item.status, "pending_review");
     assert.equal(item.title, "高等数学");
     assert.equal(item.price, 25.0);
   });
 
   test("list only shows listed items", () => {
-    const items = db.prepare("SELECT * FROM items WHERE status = 'listed'").all();
+    const items = db
+      .prepare("SELECT * FROM items WHERE status = 'listed'")
+      .all();
     assert.equal(items.length, 0, "No items should be listed initially");
   });
 
   test("atomic stock decrement prevents overselling", () => {
-    const childCat = db.prepare("SELECT id FROM categories WHERE parent_id IS NOT NULL").get() as { id: number };
-    const result = db.prepare(
-      "INSERT INTO items (seller_id, category_id, title, price, quantity, available_quantity, status) VALUES (?, ?, ?, ?, ?, ?, ?)"
-    ).run(1, childCat.id, "线性代数", 30.0, 3, 3, "listed");
+    const childCat = db
+      .prepare("SELECT id FROM categories WHERE parent_id IS NOT NULL")
+      .get() as { id: number };
+    const result = db
+      .prepare(
+        "INSERT INTO items (seller_id, category_id, title, price, quantity, available_quantity, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      )
+      .run(1, childCat.id, "线性代数", 30.0, 3, 3, "listed");
     const itemId = result.lastInsertRowid;
 
     // First purchase: success
-    const r1 = db.prepare(
-      "UPDATE items SET available_quantity = available_quantity - 1 WHERE id = ? AND available_quantity >= 1 AND status = 'listed'"
-    ).run(itemId);
+    const r1 = db
+      .prepare(
+        "UPDATE items SET available_quantity = available_quantity - 1 WHERE id = ? AND available_quantity >= 1 AND status = 'listed'",
+      )
+      .run(itemId);
     assert.equal(r1.changes, 1);
 
     // Second purchase: success
-    const r2 = db.prepare(
-      "UPDATE items SET available_quantity = available_quantity - 1 WHERE id = ? AND available_quantity >= 1 AND status = 'listed'"
-    ).run(itemId);
+    const r2 = db
+      .prepare(
+        "UPDATE items SET available_quantity = available_quantity - 1 WHERE id = ? AND available_quantity >= 1 AND status = 'listed'",
+      )
+      .run(itemId);
     assert.equal(r2.changes, 1);
 
     // Third purchase: success
-    const r3 = db.prepare(
-      "UPDATE items SET available_quantity = available_quantity - 1 WHERE id = ? AND available_quantity >= 1 AND status = 'listed'"
-    ).run(itemId);
+    const r3 = db
+      .prepare(
+        "UPDATE items SET available_quantity = available_quantity - 1 WHERE id = ? AND available_quantity >= 1 AND status = 'listed'",
+      )
+      .run(itemId);
     assert.equal(r3.changes, 1);
 
     // Fourth purchase: fail (stock = 0)
-    const r4 = db.prepare(
-      "UPDATE items SET available_quantity = available_quantity - 1 WHERE id = ? AND available_quantity >= 1 AND status = 'listed'"
-    ).run(itemId);
+    const r4 = db
+      .prepare(
+        "UPDATE items SET available_quantity = available_quantity - 1 WHERE id = ? AND available_quantity >= 1 AND status = 'listed'",
+      )
+      .run(itemId);
     assert.equal(r4.changes, 0, "Should fail: no stock");
   });
 
   test("keyword search matches title or description", () => {
-    const childCat = db.prepare("SELECT id FROM categories WHERE parent_id IS NOT NULL").get() as { id: number };
+    const childCat = db
+      .prepare("SELECT id FROM categories WHERE parent_id IS NOT NULL")
+      .get() as { id: number };
     db.prepare(
-      "INSERT INTO items (seller_id, category_id, title, description, price, status) VALUES (?, ?, ?, ?, ?, ?)"
+      "INSERT INTO items (seller_id, category_id, title, description, price, status) VALUES (?, ?, ?, ?, ?, ?)",
     ).run(1, childCat.id, "概率论", "包含统计学基础", 20.0, "listed");
 
-    const byTitle = db.prepare("SELECT * FROM items WHERE status = 'listed' AND title LIKE ?").all("%概率%");
+    const byTitle = db
+      .prepare("SELECT * FROM items WHERE status = 'listed' AND title LIKE ?")
+      .all("%概率%");
     assert.ok(byTitle.length > 0);
 
-    const byDesc = db.prepare("SELECT * FROM items WHERE status = 'listed' AND description LIKE ?").all("%统计%");
+    const byDesc = db
+      .prepare(
+        "SELECT * FROM items WHERE status = 'listed' AND description LIKE ?",
+      )
+      .all("%统计%");
     assert.ok(byDesc.length > 0);
   });
 });
@@ -2075,11 +2282,13 @@ git commit -m "feat: add item service and controller with CRUD and browse"
 ## Task 6: Favorite Controller
 
 **Files:**
+
 - Create: `backend/src/repository/favorite.repository.ts`
 - Create: `backend/src/service/favorite.service.ts`
 - Create: `backend/src/controller/favorite.controller.ts`
 
 **Interfaces:**
+
 - Consumes: `DatabaseService` from Task 1, `AuthMiddleware`, `getAuthState()` from Task 2
 - Produces: `POST /api/items/:id/favorite`, `DELETE /api/items/:id/favorite`, `GET /api/favorites`
 
@@ -2123,12 +2332,18 @@ export class FavoriteRepository {
 
   isFavorited(userId: number, itemId: number): boolean {
     const row = this.db
-      .prepare("SELECT COUNT(*) AS total FROM favorites WHERE user_id = ? AND item_id = ?")
+      .prepare(
+        "SELECT COUNT(*) AS total FROM favorites WHERE user_id = ? AND item_id = ?",
+      )
       .get(userId, itemId) as { total: number };
     return row.total > 0;
   }
 
-  listByUser(userId: number, page: number, pageSize: number): { data: Item[]; total: number } {
+  listByUser(
+    userId: number,
+    page: number,
+    pageSize: number,
+  ): { data: Item[]; total: number } {
     const offset = (page - 1) * pageSize;
     const rows = this.db
       .prepare(
@@ -2136,14 +2351,12 @@ export class FavoriteRepository {
          INNER JOIN favorites f ON f.item_id = i.id
          WHERE f.user_id = ?
          ORDER BY f.created_at DESC
-         LIMIT ? OFFSET ?`
+         LIMIT ? OFFSET ?`,
       )
       .all(userId, pageSize, offset) as any[];
 
     const totalRow = this.db
-      .prepare(
-        "SELECT COUNT(*) AS total FROM favorites WHERE user_id = ?"
-      )
+      .prepare("SELECT COUNT(*) AS total FROM favorites WHERE user_id = ?")
       .get(userId) as { total: number };
 
     return {
@@ -2186,7 +2399,10 @@ export class FavoriteService {
   @Inject()
   itemRepository: ItemRepository;
 
-  add(userId: number, itemId: number): { added: boolean; alreadyExisted: boolean } {
+  add(
+    userId: number,
+    itemId: number,
+  ): { added: boolean; alreadyExisted: boolean } {
     const item = this.itemRepository.findById(itemId);
     if (!item || item.status !== "listed") {
       throw new Error("商品不存在或已下架");
@@ -2199,7 +2415,11 @@ export class FavoriteService {
     return this.favoriteRepository.remove(userId, itemId);
   }
 
-  list(userId: number, page: number, pageSize: number): { data: Item[]; total: number } {
+  list(
+    userId: number,
+    page: number,
+    pageSize: number,
+  ): { data: Item[]; total: number } {
     return this.favoriteRepository.listByUser(userId, page, pageSize);
   }
 
@@ -2334,9 +2554,13 @@ describe("Favorite logic (unit)", () => {
         UNIQUE(user_id, item_id)
       );
     `);
-    db.prepare("INSERT INTO users (student_id, username, password_hash) VALUES ('s1', 'Alice', 'h1')").run();
+    db.prepare(
+      "INSERT INTO users (student_id, username, password_hash) VALUES ('s1', 'Alice', 'h1')",
+    ).run();
     db.prepare("INSERT INTO categories (name) VALUES ('test')").run();
-    db.prepare("INSERT INTO items (seller_id, category_id, title, price, status) VALUES (1, 1, 'Book', 10, 'listed')").run();
+    db.prepare(
+      "INSERT INTO items (seller_id, category_id, title, price, status) VALUES (1, 1, 'Book', 10, 'listed')",
+    ).run();
   });
 
   after(() => {
@@ -2345,21 +2569,33 @@ describe("Favorite logic (unit)", () => {
   });
 
   test("add favorite", () => {
-    db.prepare("INSERT INTO favorites (user_id, item_id) VALUES (?, ?)").run(1, 1);
-    const row = db.prepare("SELECT * FROM favorites WHERE user_id = 1 AND item_id = 1").get();
+    db.prepare("INSERT INTO favorites (user_id, item_id) VALUES (?, ?)").run(
+      1,
+      1,
+    );
+    const row = db
+      .prepare("SELECT * FROM favorites WHERE user_id = 1 AND item_id = 1")
+      .get();
     assert.ok(row, "Favorite should exist");
   });
 
   test("duplicate favorite throws", () => {
     assert.throws(() => {
-      db.prepare("INSERT INTO favorites (user_id, item_id) VALUES (?, ?)").run(1, 1);
+      db.prepare("INSERT INTO favorites (user_id, item_id) VALUES (?, ?)").run(
+        1,
+        1,
+      );
     }, "Should throw on duplicate");
   });
 
   test("remove favorite", () => {
-    const result = db.prepare("DELETE FROM favorites WHERE user_id = ? AND item_id = ?").run(1, 1);
+    const result = db
+      .prepare("DELETE FROM favorites WHERE user_id = ? AND item_id = ?")
+      .run(1, 1);
     assert.equal(result.changes, 1);
-    const row = db.prepare("SELECT * FROM favorites WHERE user_id = 1 AND item_id = 1").get();
+    const row = db
+      .prepare("SELECT * FROM favorites WHERE user_id = 1 AND item_id = 1")
+      .get();
     assert.equal(row, undefined, "Favorite should be removed");
   });
 });
@@ -2382,11 +2618,13 @@ git commit -m "feat: add favorite repository, service, and controller"
 ## Task 7: Order Service & Controller (with Concurrency Control)
 
 **Files:**
+
 - Create: `backend/src/repository/order.repository.ts`
 - Create: `backend/src/service/order.service.ts`
 - Create: `backend/src/controller/order.controller.ts`
 
 **Interfaces:**
+
 - Consumes: `DatabaseService` from Task 1, `ItemRepository` from Task 4, `AuthMiddleware`, `getAuthState()` from Task 2
 - Produces: `POST /api/orders`, `GET /api/orders`, `GET /api/orders/:id`, `PATCH /api/orders/:id/confirm`, `PATCH /api/orders/:id/complete`, `PATCH /api/orders/:id/cancel`
 
@@ -2422,17 +2660,23 @@ export class OrderRepository {
   }
 
   findById(id: number): Order | null {
-    const row = this.db
-      .prepare("SELECT * FROM orders WHERE id = ?")
-      .get(id) as OrderRow | undefined;
+    const row = this.db.prepare("SELECT * FROM orders WHERE id = ?").get(id) as
+      OrderRow | undefined;
     return row ? mapOrder(row) : null;
   }
 
-  findByUser(userId: number, role: "buyer" | "seller", page: number, pageSize: number): { data: Order[]; total: number } {
+  findByUser(
+    userId: number,
+    role: "buyer" | "seller",
+    page: number,
+    pageSize: number,
+  ): { data: Order[]; total: number } {
     const offset = (page - 1) * pageSize;
     const column = role === "buyer" ? "buyer_id" : "seller_id";
     const rows = this.db
-      .prepare(`SELECT * FROM orders WHERE ${column} = ? ORDER BY created_at DESC LIMIT ? OFFSET ?`)
+      .prepare(
+        `SELECT * FROM orders WHERE ${column} = ? ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+      )
       .all(userId, pageSize, offset) as OrderRow[];
     const totalRow = this.db
       .prepare(`SELECT COUNT(*) AS total FROM orders WHERE ${column} = ?`)
@@ -2440,10 +2684,16 @@ export class OrderRepository {
     return { data: rows.map(mapOrder), total: totalRow.total };
   }
 
-  create(itemId: number, buyerId: number, sellerId: number, quantity: number, totalPrice: number): Order {
+  create(
+    itemId: number,
+    buyerId: number,
+    sellerId: number,
+    quantity: number,
+    totalPrice: number,
+  ): Order {
     const result = this.db
       .prepare(
-        "INSERT INTO orders (item_id, buyer_id, seller_id, quantity, total_price) VALUES (?, ?, ?, ?, ?)"
+        "INSERT INTO orders (item_id, buyer_id, seller_id, quantity, total_price) VALUES (?, ?, ?, ?, ?)",
       )
       .run(itemId, buyerId, sellerId, quantity, totalPrice);
     return this.findById(Number(result.lastInsertRowid))!;
@@ -2451,7 +2701,9 @@ export class OrderRepository {
 
   updateStatus(id: number, status: string): Order | null {
     this.db
-      .prepare("UPDATE orders SET status = ?, updated_at = datetime('now') WHERE id = ?")
+      .prepare(
+        "UPDATE orders SET status = ?, updated_at = datetime('now') WHERE id = ?",
+      )
       .run(status, id);
     return this.findById(id);
   }
@@ -2505,7 +2757,13 @@ export class OrderService {
     if (!success) throw new Error("库存不足");
 
     const totalPrice = item.price * qty;
-    return this.orderRepository.create(itemId, buyerId, item.sellerId, qty, totalPrice);
+    return this.orderRepository.create(
+      itemId,
+      buyerId,
+      item.sellerId,
+      qty,
+      totalPrice,
+    );
   }
 
   confirmOrder(orderId: number, userId: number): Order {
@@ -2536,7 +2794,11 @@ export class OrderService {
     if (order.status === "created" && order.buyerId !== userId) {
       throw new Error("只有买家可以取消未确认的订单");
     }
-    if (order.status === "confirmed" && order.buyerId !== userId && order.sellerId !== userId) {
+    if (
+      order.status === "confirmed" &&
+      order.buyerId !== userId &&
+      order.sellerId !== userId
+    ) {
       throw new Error("只有买家或卖家可以取消已确认的订单");
     }
 
@@ -2545,7 +2807,12 @@ export class OrderService {
     return this.orderRepository.updateStatus(orderId, "cancelled")!;
   }
 
-  getOrdersByUser(userId: number, role: "buyer" | "seller", page: number, pageSize: number): { data: Order[]; total: number } {
+  getOrdersByUser(
+    userId: number,
+    role: "buyer" | "seller",
+    page: number,
+    pageSize: number,
+  ): { data: Order[]; total: number } {
     return this.orderRepository.findByUser(userId, role, page, pageSize);
   }
 
@@ -2759,11 +3026,19 @@ describe("Order logic (unit)", () => {
       );
     `);
     // Seed: seller=1, buyer=2,3; category=1; item with stock=3
-    db.prepare("INSERT INTO users (student_id, username, password_hash) VALUES ('seller', 'Seller', 'h')").run();
-    db.prepare("INSERT INTO users (student_id, username, password_hash) VALUES ('buyer1', 'Buyer1', 'h')").run();
-    db.prepare("INSERT INTO users (student_id, username, password_hash) VALUES ('buyer2', 'Buyer2', 'h')").run();
+    db.prepare(
+      "INSERT INTO users (student_id, username, password_hash) VALUES ('seller', 'Seller', 'h')",
+    ).run();
+    db.prepare(
+      "INSERT INTO users (student_id, username, password_hash) VALUES ('buyer1', 'Buyer1', 'h')",
+    ).run();
+    db.prepare(
+      "INSERT INTO users (student_id, username, password_hash) VALUES ('buyer2', 'Buyer2', 'h')",
+    ).run();
     db.prepare("INSERT INTO categories (name) VALUES ('test')").run();
-    db.prepare("INSERT INTO items (seller_id, category_id, title, price, quantity, available_quantity, status) VALUES (1, 1, 'Rare Book', 50, 3, 3, 'listed')").run();
+    db.prepare(
+      "INSERT INTO items (seller_id, category_id, title, price, quantity, available_quantity, status) VALUES (1, 1, 'Rare Book', 50, 3, 3, 'listed')",
+    ).run();
   });
 
   after(() => {
@@ -2773,61 +3048,97 @@ describe("Order logic (unit)", () => {
 
   test("create order decrements stock", () => {
     // Atomic decrement
-    const result = db.prepare(
-      "UPDATE items SET available_quantity = available_quantity - 1 WHERE id = 1 AND available_quantity >= 1 AND status = 'listed'"
-    ).run();
+    const result = db
+      .prepare(
+        "UPDATE items SET available_quantity = available_quantity - 1 WHERE id = 1 AND available_quantity >= 1 AND status = 'listed'",
+      )
+      .run();
     assert.equal(result.changes, 1);
 
-    db.prepare("INSERT INTO orders (item_id, buyer_id, seller_id, quantity, total_price) VALUES (1, 2, 1, 1, 50)").run();
+    db.prepare(
+      "INSERT INTO orders (item_id, buyer_id, seller_id, quantity, total_price) VALUES (1, 2, 1, 1, 50)",
+    ).run();
 
-    const item = db.prepare("SELECT available_quantity FROM items WHERE id = 1").get() as any;
+    const item = db
+      .prepare("SELECT available_quantity FROM items WHERE id = 1")
+      .get() as any;
     assert.equal(item.available_quantity, 2);
   });
 
   test("order state transitions", () => {
-    const orderResult = db.prepare("INSERT INTO orders (item_id, buyer_id, seller_id, quantity, total_price) VALUES (1, 3, 1, 1, 50)").run();
+    const orderResult = db
+      .prepare(
+        "INSERT INTO orders (item_id, buyer_id, seller_id, quantity, total_price) VALUES (1, 3, 1, 1, 50)",
+      )
+      .run();
     const orderId = orderResult.lastInsertRowid;
 
     // Confirm (seller)
-    db.prepare("UPDATE orders SET status = 'confirmed' WHERE id = ? AND status = 'created'").run(orderId);
-    let order = db.prepare("SELECT status FROM orders WHERE id = ?").get(orderId) as any;
+    db.prepare(
+      "UPDATE orders SET status = 'confirmed' WHERE id = ? AND status = 'created'",
+    ).run(orderId);
+    let order = db
+      .prepare("SELECT status FROM orders WHERE id = ?")
+      .get(orderId) as any;
     assert.equal(order.status, "confirmed");
 
     // Complete (buyer)
-    db.prepare("UPDATE orders SET status = 'completed' WHERE id = ? AND status = 'confirmed'").run(orderId);
-    order = db.prepare("SELECT status FROM orders WHERE id = ?").get(orderId) as any;
+    db.prepare(
+      "UPDATE orders SET status = 'completed' WHERE id = ? AND status = 'confirmed'",
+    ).run(orderId);
+    order = db
+      .prepare("SELECT status FROM orders WHERE id = ?")
+      .get(orderId) as any;
     assert.equal(order.status, "completed");
   });
 
   test("cancel order restores stock", () => {
     // Decrement stock
-    db.prepare("UPDATE items SET available_quantity = available_quantity - 1 WHERE id = 1 AND available_quantity >= 1").run();
-    const before = db.prepare("SELECT available_quantity FROM items WHERE id = 1").get() as any;
+    db.prepare(
+      "UPDATE items SET available_quantity = available_quantity - 1 WHERE id = 1 AND available_quantity >= 1",
+    ).run();
+    const before = db
+      .prepare("SELECT available_quantity FROM items WHERE id = 1")
+      .get() as any;
 
     // Create order
-    const orderResult = db.prepare("INSERT INTO orders (item_id, buyer_id, seller_id, quantity, total_price, status) VALUES (1, 2, 1, 1, 50, 'created')").run();
+    const orderResult = db
+      .prepare(
+        "INSERT INTO orders (item_id, buyer_id, seller_id, quantity, total_price, status) VALUES (1, 2, 1, 1, 50, 'created')",
+      )
+      .run();
     const orderId = orderResult.lastInsertRowid;
 
     // Cancel and restore
-    db.prepare("UPDATE orders SET status = 'cancelled' WHERE id = ?").run(orderId);
-    db.prepare("UPDATE items SET available_quantity = available_quantity + 1, status = 'listed' WHERE id = 1").run();
+    db.prepare("UPDATE orders SET status = 'cancelled' WHERE id = ?").run(
+      orderId,
+    );
+    db.prepare(
+      "UPDATE items SET available_quantity = available_quantity + 1, status = 'listed' WHERE id = 1",
+    ).run();
 
-    const after = db.prepare("SELECT available_quantity FROM items WHERE id = 1").get() as any;
+    const after = db
+      .prepare("SELECT available_quantity FROM items WHERE id = 1")
+      .get() as any;
     assert.equal(after.available_quantity, before.available_quantity + 1);
   });
 
   test("concurrent purchases: exactly N succeed for stock N", () => {
     // Reset item stock to 3
-    db.prepare("UPDATE items SET available_quantity = 3, quantity = 3, status = 'listed' WHERE id = 1").run();
+    db.prepare(
+      "UPDATE items SET available_quantity = 3, quantity = 3, status = 'listed' WHERE id = 1",
+    ).run();
 
     const attempts = 10;
     let successes = 0;
     let failures = 0;
 
     for (let i = 0; i < attempts; i++) {
-      const result = db.prepare(
-        "UPDATE items SET available_quantity = available_quantity - 1 WHERE id = 1 AND available_quantity >= 1 AND status = 'listed'"
-      ).run();
+      const result = db
+        .prepare(
+          "UPDATE items SET available_quantity = available_quantity - 1 WHERE id = 1 AND available_quantity >= 1 AND status = 'listed'",
+        )
+        .run();
       if (result.changes > 0) {
         successes++;
       } else {
@@ -2838,13 +3149,17 @@ describe("Order logic (unit)", () => {
     assert.equal(successes, 3, "Exactly 3 purchases should succeed");
     assert.equal(failures, 7, "Exactly 7 purchases should fail");
 
-    const item = db.prepare("SELECT available_quantity FROM items WHERE id = 1").get() as any;
+    const item = db
+      .prepare("SELECT available_quantity FROM items WHERE id = 1")
+      .get() as any;
     assert.equal(item.available_quantity, 0, "Stock should be 0");
   });
 
   test("buyer cannot buy own item", () => {
     // Seller is user 1, try to buy as user 1
-    const item = db.prepare("SELECT seller_id FROM items WHERE id = 1").get() as any;
+    const item = db
+      .prepare("SELECT seller_id FROM items WHERE id = 1")
+      .get() as any;
     assert.equal(item.seller_id, 1, "Seller is user 1");
     // This check is done in service layer, not DB layer
   });
@@ -2868,9 +3183,11 @@ git commit -m "feat: add order service with concurrency control and state transi
 ## Task 8: Update OpenAPI Contract
 
 **Files:**
+
 - Modify: `contracts/openapi.yaml`
 
 **Interfaces:**
+
 - Consumes: All API endpoints defined in Tasks 3-7
 - Produces: Complete OpenAPI 3.0 spec for the campus marketplace
 
@@ -2879,6 +3196,7 @@ git commit -m "feat: add order service with concurrency control and state transi
 Replace `contracts/openapi.yaml` with the full marketplace API specification. This includes all endpoints for auth, items, orders, favorites, and admin.
 
 The spec should cover:
+
 - `POST /api/auth/register` — 201, 400, 409
 - `POST /api/auth/login` — 200, 400, 401
 - `POST /api/auth/logout` — 204
@@ -2922,6 +3240,7 @@ git commit -m "docs: update OpenAPI spec with campus marketplace endpoints"
 ## Task 9: Frontend — API Client & Layout
 
 **Files:**
+
 - Create: `frontend/src/lib/api.ts`
 - Modify: `frontend/src/app/layout.tsx`
 - Create: `frontend/src/components/layout/header.tsx`
@@ -2930,6 +3249,7 @@ git commit -m "docs: update OpenAPI spec with campus marketplace endpoints"
 - Create: `frontend/src/components/common/search-bar.tsx`
 
 **Interfaces:**
+
 - Consumes: Backend API endpoints
 - Produces: Typed API client functions; root layout with header; shared UI components
 
@@ -3020,7 +3340,9 @@ export const itemApi = {
 // --- Favorites ---
 export const favoriteApi = {
   add: (itemId: number) =>
-    request<{ data: { message: string } }>(`/items/${itemId}/favorite`, { method: "POST" }),
+    request<{ data: { message: string } }>(`/items/${itemId}/favorite`, {
+      method: "POST",
+    }),
   remove: (itemId: number) =>
     request<void>(`/items/${itemId}/favorite`, { method: "DELETE" }),
   list: (page?: number) => {
@@ -3059,7 +3381,9 @@ export const adminApi = {
     return request<{ data: Item[]; total: number }>(`/admin/items?${search}`);
   },
   approve: (itemId: number) =>
-    request<{ data: Item }>(`/admin/items/${itemId}/approve`, { method: "PATCH" }),
+    request<{ data: Item }>(`/admin/items/${itemId}/approve`, {
+      method: "PATCH",
+    }),
   reject: (itemId: number, reason?: string) =>
     request<{ data: Item }>(`/admin/items/${itemId}/reject`, {
       method: "PATCH",
@@ -3156,8 +3480,18 @@ Create `frontend/src/components/common/empty-state.tsx`:
 export function EmptyState({ message }: { message: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-      <svg className="w-16 h-16 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+      <svg
+        className="w-16 h-16 mb-4"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={1}
+          d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+        />
       </svg>
       <p>{message}</p>
     </div>
@@ -3177,7 +3511,12 @@ interface PaginationProps {
   onPageChange: (page: number) => void;
 }
 
-export function Pagination({ page, total, pageSize, onPageChange }: PaginationProps) {
+export function Pagination({
+  page,
+  total,
+  pageSize,
+  onPageChange,
+}: PaginationProps) {
   const totalPages = Math.ceil(total / pageSize);
   if (totalPages <= 1) return null;
 
@@ -3220,7 +3559,11 @@ interface SearchBarProps {
   placeholder?: string;
 }
 
-export function SearchBar({ defaultValue = "", onSearch, placeholder = "搜索商品..." }: SearchBarProps) {
+export function SearchBar({
+  defaultValue = "",
+  onSearch,
+  placeholder = "搜索商品...",
+}: SearchBarProps) {
   const [value, setValue] = useState(defaultValue);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -3265,7 +3608,8 @@ export function Header() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    authApi.me()
+    authApi
+      .me()
       .then((res) => setUser(res.data))
       .catch(() => setUser(null))
       .finally(() => setLoading(false));
@@ -3280,18 +3624,46 @@ export function Header() {
   return (
     <header className="bg-white border-b sticky top-0 z-50">
       <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
-        <Link href="/" className="text-lg font-bold text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">
+        <Link
+          href="/"
+          className="text-lg font-bold text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+        >
           校园交易
         </Link>
         <nav className="flex items-center gap-4" aria-label="主导航">
-          <Link href="/" className="hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">首页</Link>
+          <Link
+            href="/"
+            className="hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+          >
+            首页
+          </Link>
           {user ? (
             <>
-              <Link href="/publish" className="hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">发布</Link>
-              <Link href="/my/orders" className="hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">我的订单</Link>
-              <Link href="/my/favorites" className="hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">收藏</Link>
+              <Link
+                href="/publish"
+                className="hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+              >
+                发布
+              </Link>
+              <Link
+                href="/my/orders"
+                className="hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+              >
+                我的订单
+              </Link>
+              <Link
+                href="/my/favorites"
+                className="hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+              >
+                收藏
+              </Link>
               {user.role === "admin" && (
-                <Link href="/admin/items" className="hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">管理</Link>
+                <Link
+                  href="/admin/items"
+                  className="hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+                >
+                  管理
+                </Link>
               )}
               <span className="text-sm text-gray-500">{user.username}</span>
               <button
@@ -3304,8 +3676,18 @@ export function Header() {
           ) : (
             !loading && (
               <>
-                <Link href="/login" className="hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">登录</Link>
-                <Link href="/register" className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">注册</Link>
+                <Link
+                  href="/login"
+                  className="hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+                >
+                  登录
+                </Link>
+                <Link
+                  href="/register"
+                  className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  注册
+                </Link>
               </>
             )
           )}
@@ -3330,7 +3712,11 @@ export const metadata: Metadata = {
   description: "校园闲置物品流转平台",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="zh-CN">
       <body className="bg-gray-50 min-h-screen">
@@ -3359,11 +3745,13 @@ git commit -m "feat: add frontend API client, layout, and shared components"
 ## Task 10: Frontend — Home Page (Item List, Search, Category Filter)
 
 **Files:**
+
 - Modify: `frontend/src/app/page.tsx`
 - Create: `frontend/src/components/item/item-card.tsx`
 - Create: `frontend/src/components/category/category-tree.tsx`
 
 **Interfaces:**
+
 - Consumes: `itemApi.list()`, `adminApi.categories()` from `lib/api.ts`; `SearchBar`, `Pagination`, `EmptyState` from Task 9
 - Produces: Home page with category sidebar, search bar, item grid, pagination
 
@@ -3384,7 +3772,11 @@ export function ItemCard({ item }: { item: Item }) {
     >
       <div className="aspect-square bg-gray-100 rounded-t-lg flex items-center justify-center overflow-hidden">
         {item.images.length > 0 ? (
-          <img src={item.images[0]} alt={item.title} className="w-full h-full object-cover" />
+          <img
+            src={item.images[0]}
+            alt={item.title}
+            className="w-full h-full object-cover"
+          />
         ) : (
           <span className="text-gray-300 text-4xl">📦</span>
         )}
@@ -3417,26 +3809,36 @@ interface CategoryTreeProps {
   onSelect: (categoryId: number | undefined) => void;
 }
 
-export function CategoryTree({ categories, selectedId, onSelect }: CategoryTreeProps) {
+export function CategoryTree({
+  categories,
+  selectedId,
+  onSelect,
+}: CategoryTreeProps) {
   return (
     <nav aria-label="分类筛选" className="space-y-2">
       <button
         onClick={() => onSelect(undefined)}
         className={`w-full text-left px-3 py-2 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-          !selectedId ? "bg-blue-50 text-blue-600 font-medium" : "hover:bg-gray-50"
+          !selectedId
+            ? "bg-blue-50 text-blue-600 font-medium"
+            : "hover:bg-gray-50"
         }`}
       >
         全部分类
       </button>
       {categories.map((cat) => (
         <div key={cat.id}>
-          <p className="px-3 py-1 text-xs font-medium text-gray-500 uppercase">{cat.name}</p>
+          <p className="px-3 py-1 text-xs font-medium text-gray-500 uppercase">
+            {cat.name}
+          </p>
           {cat.children?.map((child) => (
             <button
               key={child.id}
               onClick={() => onSelect(child.id)}
               className={`w-full text-left px-6 py-1.5 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                selectedId === child.id ? "bg-blue-50 text-blue-600 font-medium" : "hover:bg-gray-50"
+                selectedId === child.id
+                  ? "bg-blue-50 text-blue-600 font-medium"
+                  : "hover:bg-gray-50"
               }`}
             >
               {child.name}
@@ -3479,7 +3881,12 @@ export default function HomePage() {
     setLoading(true);
     setError(null);
     try {
-      const result = await itemApi.list({ page, pageSize, categoryId, keyword });
+      const result = await itemApi.list({
+        page,
+        pageSize,
+        categoryId,
+        keyword,
+      });
       setItems(result.data);
       setTotal(result.total);
     } catch (err) {
@@ -3490,7 +3897,8 @@ export default function HomePage() {
   }, [page, categoryId, keyword]);
 
   useEffect(() => {
-    adminApi.categories()
+    adminApi
+      .categories()
       .then((res) => setCategories(res.data))
       .catch(() => {});
   }, []);
@@ -3524,13 +3932,18 @@ export default function HomePage() {
         </div>
 
         {loading && (
-          <div className="text-center py-16 text-gray-400" role="status">加载中...</div>
+          <div className="text-center py-16 text-gray-400" role="status">
+            加载中...
+          </div>
         )}
 
         {error && (
           <div className="text-center py-16 text-red-500" role="alert">
             <p>{error}</p>
-            <button onClick={fetchItems} className="mt-2 text-blue-600 underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">
+            <button
+              onClick={fetchItems}
+              className="mt-2 text-blue-600 underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+            >
               重试
             </button>
           </div>
@@ -3547,7 +3960,12 @@ export default function HomePage() {
                 <ItemCard key={item.id} item={item} />
               ))}
             </div>
-            <Pagination page={page} total={total} pageSize={pageSize} onPageChange={setPage} />
+            <Pagination
+              page={page}
+              total={total}
+              pageSize={pageSize}
+              onPageChange={setPage}
+            />
           </>
         )}
       </div>
@@ -3573,10 +3991,12 @@ git commit -m "feat: add home page with item grid, category filter, and search"
 ## Task 11: Frontend — Auth Pages (Login, Register)
 
 **Files:**
+
 - Create: `frontend/src/app/login/page.tsx`
 - Create: `frontend/src/app/register/page.tsx`
 
 **Interfaces:**
+
 - Consumes: `authApi.login()`, `authApi.register()` from `lib/api.ts`
 - Produces: Login and register pages with form validation and error display
 
@@ -3618,10 +4038,17 @@ export default function LoginPage() {
       <h1 className="text-2xl font-bold text-center mb-8">登录</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="p-3 bg-red-50 text-red-600 rounded text-sm" role="alert">{error}</div>
+          <div
+            className="p-3 bg-red-50 text-red-600 rounded text-sm"
+            role="alert"
+          >
+            {error}
+          </div>
         )}
         <div>
-          <label htmlFor="studentId" className="block text-sm font-medium mb-1">学号</label>
+          <label htmlFor="studentId" className="block text-sm font-medium mb-1">
+            学号
+          </label>
           <input
             id="studentId"
             type="text"
@@ -3632,7 +4059,9 @@ export default function LoginPage() {
           />
         </div>
         <div>
-          <label htmlFor="password" className="block text-sm font-medium mb-1">密码</label>
+          <label htmlFor="password" className="block text-sm font-medium mb-1">
+            密码
+          </label>
           <input
             id="password"
             type="password"
@@ -3650,7 +4079,13 @@ export default function LoginPage() {
           {submitting ? "登录中..." : "登录"}
         </button>
         <p className="text-center text-sm text-gray-500">
-          还没有账号？<Link href="/register" className="text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">注册</Link>
+          还没有账号？
+          <Link
+            href="/register"
+            className="text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+          >
+            注册
+          </Link>
         </p>
       </form>
     </div>
@@ -3709,10 +4144,17 @@ export default function RegisterPage() {
       <h1 className="text-2xl font-bold text-center mb-8">注册</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="p-3 bg-red-50 text-red-600 rounded text-sm" role="alert">{error}</div>
+          <div
+            className="p-3 bg-red-50 text-red-600 rounded text-sm"
+            role="alert"
+          >
+            {error}
+          </div>
         )}
         <div>
-          <label htmlFor="studentId" className="block text-sm font-medium mb-1">学号</label>
+          <label htmlFor="studentId" className="block text-sm font-medium mb-1">
+            学号
+          </label>
           <input
             id="studentId"
             type="text"
@@ -3723,7 +4165,9 @@ export default function RegisterPage() {
           />
         </div>
         <div>
-          <label htmlFor="username" className="block text-sm font-medium mb-1">用户名</label>
+          <label htmlFor="username" className="block text-sm font-medium mb-1">
+            用户名
+          </label>
           <input
             id="username"
             type="text"
@@ -3734,7 +4178,9 @@ export default function RegisterPage() {
           />
         </div>
         <div>
-          <label htmlFor="password" className="block text-sm font-medium mb-1">密码</label>
+          <label htmlFor="password" className="block text-sm font-medium mb-1">
+            密码
+          </label>
           <input
             id="password"
             type="password"
@@ -3746,7 +4192,12 @@ export default function RegisterPage() {
           />
         </div>
         <div>
-          <label htmlFor="confirmPassword" className="block text-sm font-medium mb-1">确认密码</label>
+          <label
+            htmlFor="confirmPassword"
+            className="block text-sm font-medium mb-1"
+          >
+            确认密码
+          </label>
           <input
             id="confirmPassword"
             type="password"
@@ -3764,7 +4215,13 @@ export default function RegisterPage() {
           {submitting ? "注册中..." : "注册"}
         </button>
         <p className="text-center text-sm text-gray-500">
-          已有账号？<Link href="/login" className="text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">登录</Link>
+          已有账号？
+          <Link
+            href="/login"
+            className="text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+          >
+            登录
+          </Link>
         </p>
       </form>
     </div>
@@ -3789,12 +4246,14 @@ git commit -m "feat: add login and register pages"
 ## Task 12: Frontend — Item Detail & Publish
 
 **Files:**
+
 - Create: `frontend/src/app/items/[id]/page.tsx`
 - Create: `frontend/src/app/publish/page.tsx`
 - Create: `frontend/src/components/item/item-form.tsx`
 - Create: `frontend/src/components/item/item-status-badge.tsx`
 
 **Interfaces:**
+
 - Consumes: `itemApi.getById()`, `itemApi.create()`, `favoriteApi.add()`, `favoriteApi.remove()`, `orderApi.create()`, `adminApi.categories()` from `lib/api.ts`
 - Produces: Item detail page with favorite/buy actions; publish page with form
 
@@ -3804,7 +4263,10 @@ Create `frontend/src/components/item/item-status-badge.tsx`:
 
 ```tsx
 const statusMap: Record<string, { label: string; className: string }> = {
-  pending_review: { label: "待审核", className: "bg-yellow-100 text-yellow-700" },
+  pending_review: {
+    label: "待审核",
+    className: "bg-yellow-100 text-yellow-700",
+  },
   listed: { label: "在售", className: "bg-green-100 text-green-700" },
   rejected: { label: "已拒绝", className: "bg-red-100 text-red-700" },
   reserved: { label: "已预订", className: "bg-blue-100 text-blue-700" },
@@ -3812,9 +4274,14 @@ const statusMap: Record<string, { label: string; className: string }> = {
 };
 
 export function ItemStatusBadge({ status }: { status: string }) {
-  const config = statusMap[status] ?? { label: status, className: "bg-gray-100 text-gray-700" };
+  const config = statusMap[status] ?? {
+    label: status,
+    className: "bg-gray-100 text-gray-700",
+  };
   return (
-    <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${config.className}`}>
+    <span
+      className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${config.className}`}
+    >
       {config.label}
     </span>
   );
@@ -3837,18 +4304,31 @@ interface ItemFormProps {
   submitLabel: string;
 }
 
-export function ItemForm({ initialData, onSubmit, submitLabel }: ItemFormProps) {
+export function ItemForm({
+  initialData,
+  onSubmit,
+  submitLabel,
+}: ItemFormProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [title, setTitle] = useState(initialData?.title ?? "");
-  const [description, setDescription] = useState(initialData?.description ?? "");
+  const [description, setDescription] = useState(
+    initialData?.description ?? "",
+  );
   const [price, setPrice] = useState(String(initialData?.price ?? ""));
-  const [quantity, setQuantity] = useState(String(initialData?.quantity ?? "1"));
-  const [categoryId, setCategoryId] = useState<number | "">(initialData?.categoryId ?? "");
+  const [quantity, setQuantity] = useState(
+    String(initialData?.quantity ?? "1"),
+  );
+  const [categoryId, setCategoryId] = useState<number | "">(
+    initialData?.categoryId ?? "",
+  );
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    adminApi.categories().then((res) => setCategories(res.data)).catch(() => {});
+    adminApi
+      .categories()
+      .then((res) => setCategories(res.data))
+      .catch(() => {});
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -3880,15 +4360,28 @@ export function ItemForm({ initialData, onSubmit, submitLabel }: ItemFormProps) 
   const subCategories: { id: number; name: string; parentName: string }[] = [];
   for (const cat of categories) {
     for (const child of cat.children ?? []) {
-      subCategories.push({ id: child.id, name: child.name, parentName: cat.name });
+      subCategories.push({
+        id: child.id,
+        name: child.name,
+        parentName: cat.name,
+      });
     }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {error && <div className="p-3 bg-red-50 text-red-600 rounded text-sm" role="alert">{error}</div>}
+      {error && (
+        <div
+          className="p-3 bg-red-50 text-red-600 rounded text-sm"
+          role="alert"
+        >
+          {error}
+        </div>
+      )}
       <div>
-        <label htmlFor="title" className="block text-sm font-medium mb-1">标题 *</label>
+        <label htmlFor="title" className="block text-sm font-medium mb-1">
+          标题 *
+        </label>
         <input
           id="title"
           type="text"
@@ -3900,22 +4393,30 @@ export function ItemForm({ initialData, onSubmit, submitLabel }: ItemFormProps) 
         />
       </div>
       <div>
-        <label htmlFor="categoryId" className="block text-sm font-medium mb-1">分类 *</label>
+        <label htmlFor="categoryId" className="block text-sm font-medium mb-1">
+          分类 *
+        </label>
         <select
           id="categoryId"
           value={categoryId}
-          onChange={(e) => setCategoryId(e.target.value ? Number(e.target.value) : "")}
+          onChange={(e) =>
+            setCategoryId(e.target.value ? Number(e.target.value) : "")
+          }
           required
           className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">请选择分类</option>
           {subCategories.map((sc) => (
-            <option key={sc.id} value={sc.id}>{sc.parentName} / {sc.name}</option>
+            <option key={sc.id} value={sc.id}>
+              {sc.parentName} / {sc.name}
+            </option>
           ))}
         </select>
       </div>
       <div>
-        <label htmlFor="price" className="block text-sm font-medium mb-1">价格 (¥) *</label>
+        <label htmlFor="price" className="block text-sm font-medium mb-1">
+          价格 (¥) *
+        </label>
         <input
           id="price"
           type="number"
@@ -3928,7 +4429,9 @@ export function ItemForm({ initialData, onSubmit, submitLabel }: ItemFormProps) 
         />
       </div>
       <div>
-        <label htmlFor="quantity" className="block text-sm font-medium mb-1">数量</label>
+        <label htmlFor="quantity" className="block text-sm font-medium mb-1">
+          数量
+        </label>
         <input
           id="quantity"
           type="number"
@@ -3939,7 +4442,9 @@ export function ItemForm({ initialData, onSubmit, submitLabel }: ItemFormProps) 
         />
       </div>
       <div>
-        <label htmlFor="description" className="block text-sm font-medium mb-1">描述</label>
+        <label htmlFor="description" className="block text-sm font-medium mb-1">
+          描述
+        </label>
         <textarea
           id="description"
           value={description}
@@ -3982,7 +4487,8 @@ export default function ItemDetailPage() {
   const [actionMsg, setActionMsg] = useState("");
 
   useEffect(() => {
-    itemApi.getById(Number(id))
+    itemApi
+      .getById(Number(id))
       .then((res) => setItem(res.data))
       .catch((err) => setError(err instanceof Error ? err.message : "加载失败"))
       .finally(() => setLoading(false));
@@ -4007,8 +4513,18 @@ export default function ItemDetailPage() {
     }
   };
 
-  if (loading) return <div className="text-center py-16 text-gray-400" role="status">加载中...</div>;
-  if (error) return <div className="text-center py-16 text-red-500" role="alert">{error}</div>;
+  if (loading)
+    return (
+      <div className="text-center py-16 text-gray-400" role="status">
+        加载中...
+      </div>
+    );
+  if (error)
+    return (
+      <div className="text-center py-16 text-red-500" role="alert">
+        {error}
+      </div>
+    );
   if (!item) return null;
 
   return (
@@ -4016,7 +4532,11 @@ export default function ItemDetailPage() {
       <div className="bg-white rounded-lg shadow-sm border p-6">
         <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center mb-6">
           {item.images.length > 0 ? (
-            <img src={item.images[0]} alt={item.title} className="w-full h-full object-cover rounded-lg" />
+            <img
+              src={item.images[0]}
+              alt={item.title}
+              className="w-full h-full object-cover rounded-lg"
+            />
           ) : (
             <span className="text-gray-300 text-6xl">📦</span>
           )}
@@ -4027,24 +4547,35 @@ export default function ItemDetailPage() {
           <ItemStatusBadge status={item.status} />
         </div>
 
-        <p className="text-2xl text-red-600 font-bold mt-2">¥{item.price.toFixed(2)}</p>
+        <p className="text-2xl text-red-600 font-bold mt-2">
+          ¥{item.price.toFixed(2)}
+        </p>
 
         <div className="mt-4 text-sm text-gray-500 space-y-1">
           <p>卖家：{item.seller?.username ?? "未知"}</p>
           <p>分类：{item.category?.name ?? "未知"}</p>
-          <p>库存：{item.availableQuantity} / {item.quantity}</p>
+          <p>
+            库存：{item.availableQuantity} / {item.quantity}
+          </p>
           <p>发布时间：{new Date(item.createdAt).toLocaleString("zh-CN")}</p>
         </div>
 
         {item.description && (
           <div className="mt-4">
             <h2 className="font-medium mb-1">商品描述</h2>
-            <p className="text-sm text-gray-600 whitespace-pre-wrap">{item.description}</p>
+            <p className="text-sm text-gray-600 whitespace-pre-wrap">
+              {item.description}
+            </p>
           </div>
         )}
 
         {actionMsg && (
-          <div className="mt-4 p-3 bg-blue-50 text-blue-700 rounded text-sm" role="status">{actionMsg}</div>
+          <div
+            className="mt-4 p-3 bg-blue-50 text-blue-700 rounded text-sm"
+            role="status"
+          >
+            {actionMsg}
+          </div>
         )}
 
         <div className="mt-6 flex gap-3">
@@ -4114,6 +4645,7 @@ git commit -m "feat: add item detail page and publish page"
 ## Task 13: Frontend — My Pages (Items, Orders, Favorites)
 
 **Files:**
+
 - Create: `frontend/src/app/my/items/page.tsx`
 - Create: `frontend/src/app/my/orders/page.tsx`
 - Create: `frontend/src/app/my/favorites/page.tsx`
@@ -4121,6 +4653,7 @@ git commit -m "feat: add item detail page and publish page"
 - Create: `frontend/src/components/order/order-actions.tsx`
 
 **Interfaces:**
+
 - Consumes: `itemApi.myItems()`, `itemApi.delete()`, `orderApi.list()`, `orderApi.confirm()`, `orderApi.complete()`, `orderApi.cancel()`, `favoriteApi.list()`, `favoriteApi.remove()` from `lib/api.ts`
 - Produces: My items page, my orders page (with buy/sell tabs), my favorites page
 
@@ -4139,23 +4672,41 @@ const statusLabels: Record<string, string> = {
   cancelled: "已取消",
 };
 
-export function OrderCard({ order, role, onAction }: { order: Order; role: "buyer" | "seller"; onAction: () => void }) {
+export function OrderCard({
+  order,
+  role,
+  onAction,
+}: {
+  order: Order;
+  role: "buyer" | "seller";
+  onAction: () => void;
+}) {
   return (
     <div className="bg-white rounded-lg border p-4">
       <div className="flex justify-between items-start">
         <div>
           <p className="font-medium">订单 #{order.id}</p>
           <p className="text-sm text-gray-500">
-            {role === "buyer" ? `卖家：${order.seller?.username ?? "未知"}` : `买家：${order.buyer?.username ?? "未知"}`}
+            {role === "buyer"
+              ? `卖家：${order.seller?.username ?? "未知"}`
+              : `买家：${order.buyer?.username ?? "未知"}`}
           </p>
-          <p className="text-sm text-gray-500">数量：{order.quantity} | 总价：¥{order.totalPrice.toFixed(2)}</p>
-          <p className="text-xs text-gray-400 mt-1">{new Date(order.createdAt).toLocaleString("zh-CN")}</p>
+          <p className="text-sm text-gray-500">
+            数量：{order.quantity} | 总价：¥{order.totalPrice.toFixed(2)}
+          </p>
+          <p className="text-xs text-gray-400 mt-1">
+            {new Date(order.createdAt).toLocaleString("zh-CN")}
+          </p>
         </div>
-        <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-          order.status === "completed" ? "bg-green-100 text-green-700" :
-          order.status === "cancelled" ? "bg-gray-100 text-gray-700" :
-          "bg-blue-100 text-blue-700"
-        }`}>
+        <span
+          className={`px-2 py-0.5 rounded text-xs font-medium ${
+            order.status === "completed"
+              ? "bg-green-100 text-green-700"
+              : order.status === "cancelled"
+                ? "bg-gray-100 text-gray-700"
+                : "bg-blue-100 text-blue-700"
+          }`}
+        >
           {statusLabels[order.status] ?? order.status}
         </span>
       </div>
@@ -4173,7 +4724,15 @@ Create `frontend/src/components/order/order-actions.tsx`:
 import { useState } from "react";
 import { orderApi, Order } from "@/lib/api";
 
-export function OrderActions({ order, role, onAction }: { order: Order; role: "buyer" | "seller"; onAction: () => void }) {
+export function OrderActions({
+  order,
+  role,
+  onAction,
+}: {
+  order: Order;
+  role: "buyer" | "seller";
+  onAction: () => void;
+}) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -4258,7 +4817,9 @@ export default function MyItemsPage() {
     }
   }, [page]);
 
-  useEffect(() => { fetchItems(); }, [fetchItems]);
+  useEffect(() => {
+    fetchItems();
+  }, [fetchItems]);
 
   const handleDelete = async (id: number) => {
     if (!confirm("确定删除该商品？")) return;
@@ -4273,16 +4834,28 @@ export default function MyItemsPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">我的发布</h1>
-      {loading && <div className="text-center py-16 text-gray-400" role="status">加载中...</div>}
-      {!loading && items.length === 0 && <EmptyState message="你还没有发布商品" />}
+      {loading && (
+        <div className="text-center py-16 text-gray-400" role="status">
+          加载中...
+        </div>
+      )}
+      {!loading && items.length === 0 && (
+        <EmptyState message="你还没有发布商品" />
+      )}
       {!loading && items.length > 0 && (
         <>
           <div className="space-y-3">
             {items.map((item) => (
-              <div key={item.id} className="bg-white rounded-lg border p-4 flex justify-between items-center">
+              <div
+                key={item.id}
+                className="bg-white rounded-lg border p-4 flex justify-between items-center"
+              >
                 <div>
                   <p className="font-medium">{item.title}</p>
-                  <p className="text-sm text-gray-500">¥{item.price.toFixed(2)} | 库存 {item.availableQuantity}/{item.quantity}</p>
+                  <p className="text-sm text-gray-500">
+                    ¥{item.price.toFixed(2)} | 库存 {item.availableQuantity}/
+                    {item.quantity}
+                  </p>
                 </div>
                 <div className="flex items-center gap-3">
                   <ItemStatusBadge status={item.status} />
@@ -4296,7 +4869,12 @@ export default function MyItemsPage() {
               </div>
             ))}
           </div>
-          <Pagination page={page} total={total} pageSize={pageSize} onPageChange={setPage} />
+          <Pagination
+            page={page}
+            total={total}
+            pageSize={pageSize}
+            onPageChange={setPage}
+          />
         </>
       )}
     </div>
@@ -4338,7 +4916,9 @@ export default function MyOrdersPage() {
     }
   }, [tab, page]);
 
-  useEffect(() => { fetchOrders(); }, [fetchOrders]);
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
 
   return (
     <div>
@@ -4347,7 +4927,10 @@ export default function MyOrdersPage() {
         <button
           role="tab"
           aria-selected={tab === "buyer"}
-          onClick={() => { setTab("buyer"); setPage(1); }}
+          onClick={() => {
+            setTab("buyer");
+            setPage(1);
+          }}
           className={`pb-2 px-1 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded ${tab === "buyer" ? "border-b-2 border-blue-600 text-blue-600 font-medium" : "text-gray-500"}`}
         >
           我买到的
@@ -4355,23 +4938,40 @@ export default function MyOrdersPage() {
         <button
           role="tab"
           aria-selected={tab === "seller"}
-          onClick={() => { setTab("seller"); setPage(1); }}
+          onClick={() => {
+            setTab("seller");
+            setPage(1);
+          }}
           className={`pb-2 px-1 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded ${tab === "seller" ? "border-b-2 border-blue-600 text-blue-600 font-medium" : "text-gray-500"}`}
         >
           我卖出的
         </button>
       </div>
 
-      {loading && <div className="text-center py-16 text-gray-400" role="status">加载中...</div>}
+      {loading && (
+        <div className="text-center py-16 text-gray-400" role="status">
+          加载中...
+        </div>
+      )}
       {!loading && orders.length === 0 && <EmptyState message="暂无订单" />}
       {!loading && orders.length > 0 && (
         <>
           <div className="space-y-3">
             {orders.map((order) => (
-              <OrderCard key={order.id} order={order} role={tab} onAction={fetchOrders} />
+              <OrderCard
+                key={order.id}
+                order={order}
+                role={tab}
+                onAction={fetchOrders}
+              />
             ))}
           </div>
-          <Pagination page={page} total={total} pageSize={pageSize} onPageChange={setPage} />
+          <Pagination
+            page={page}
+            total={total}
+            pageSize={pageSize}
+            onPageChange={setPage}
+          />
         </>
       )}
     </div>
@@ -4412,7 +5012,9 @@ export default function MyFavoritesPage() {
     }
   }, [page]);
 
-  useEffect(() => { fetchFavorites(); }, [fetchFavorites]);
+  useEffect(() => {
+    fetchFavorites();
+  }, [fetchFavorites]);
 
   const handleUnfavorite = async (itemId: number) => {
     try {
@@ -4426,8 +5028,14 @@ export default function MyFavoritesPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">我的收藏</h1>
-      {loading && <div className="text-center py-16 text-gray-400" role="status">加载中...</div>}
-      {!loading && items.length === 0 && <EmptyState message="你还没有收藏商品" />}
+      {loading && (
+        <div className="text-center py-16 text-gray-400" role="status">
+          加载中...
+        </div>
+      )}
+      {!loading && items.length === 0 && (
+        <EmptyState message="你还没有收藏商品" />
+      )}
       {!loading && items.length > 0 && (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -4444,7 +5052,12 @@ export default function MyFavoritesPage() {
               </div>
             ))}
           </div>
-          <Pagination page={page} total={total} pageSize={pageSize} onPageChange={setPage} />
+          <Pagination
+            page={page}
+            total={total}
+            pageSize={pageSize}
+            onPageChange={setPage}
+          />
         </>
       )}
     </div>
@@ -4469,10 +5082,12 @@ git commit -m "feat: add my items, orders, and favorites pages"
 ## Task 14: Frontend — Admin Pages (Review, Categories)
 
 **Files:**
+
 - Create: `frontend/src/app/admin/items/page.tsx`
 - Create: `frontend/src/app/admin/categories/page.tsx`
 
 **Interfaces:**
+
 - Consumes: `adminApi.pendingItems()`, `adminApi.approve()`, `adminApi.reject()`, `adminApi.categories()`, `adminApi.createCategory()`, `adminApi.updateCategory()`, `adminApi.deleteCategory()` from `lib/api.ts`
 - Produces: Admin item review page; admin category management page
 
@@ -4509,7 +5124,9 @@ export default function AdminItemsPage() {
     }
   }, [page]);
 
-  useEffect(() => { fetchItems(); }, [fetchItems]);
+  useEffect(() => {
+    fetchItems();
+  }, [fetchItems]);
 
   const handleApprove = async (id: number) => {
     try {
@@ -4535,9 +5152,22 @@ export default function AdminItemsPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">商品审核</h1>
-      {actionMsg && <div className="mb-4 p-3 bg-blue-50 text-blue-700 rounded text-sm" role="status">{actionMsg}</div>}
-      {loading && <div className="text-center py-16 text-gray-400" role="status">加载中...</div>}
-      {!loading && items.length === 0 && <EmptyState message="暂无待审核商品" />}
+      {actionMsg && (
+        <div
+          className="mb-4 p-3 bg-blue-50 text-blue-700 rounded text-sm"
+          role="status"
+        >
+          {actionMsg}
+        </div>
+      )}
+      {loading && (
+        <div className="text-center py-16 text-gray-400" role="status">
+          加载中...
+        </div>
+      )}
+      {!loading && items.length === 0 && (
+        <EmptyState message="暂无待审核商品" />
+      )}
       {!loading && items.length > 0 && (
         <>
           <div className="space-y-3">
@@ -4546,8 +5176,12 @@ export default function AdminItemsPage() {
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="font-medium">{item.title}</p>
-                    <p className="text-sm text-gray-500">¥{item.price.toFixed(2)} | 卖家 ID: {item.sellerId}</p>
-                    <p className="text-xs text-gray-400">{new Date(item.createdAt).toLocaleString("zh-CN")}</p>
+                    <p className="text-sm text-gray-500">
+                      ¥{item.price.toFixed(2)} | 卖家 ID: {item.sellerId}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {new Date(item.createdAt).toLocaleString("zh-CN")}
+                    </p>
                   </div>
                   <div className="flex gap-2">
                     <button
@@ -4567,7 +5201,12 @@ export default function AdminItemsPage() {
               </div>
             ))}
           </div>
-          <Pagination page={page} total={total} pageSize={pageSize} onPageChange={setPage} />
+          <Pagination
+            page={page}
+            total={total}
+            pageSize={pageSize}
+            onPageChange={setPage}
+          />
         </>
       )}
     </div>
@@ -4604,12 +5243,18 @@ export default function AdminCategoriesPage() {
     }
   }, []);
 
-  useEffect(() => { fetchCategories(); }, [fetchCategories]);
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await adminApi.createCategory(newName, newParentId ? Number(newParentId) : null, 0);
+      await adminApi.createCategory(
+        newName,
+        newParentId ? Number(newParentId) : null,
+        0,
+      );
       setNewName("");
       setNewParentId("");
       setMsg("分类创建成功");
@@ -4633,7 +5278,14 @@ export default function AdminCategoriesPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">分类管理</h1>
-      {msg && <div className="mb-4 p-3 bg-blue-50 text-blue-700 rounded text-sm" role="status">{msg}</div>}
+      {msg && (
+        <div
+          className="mb-4 p-3 bg-blue-50 text-blue-700 rounded text-sm"
+          role="status"
+        >
+          {msg}
+        </div>
+      )}
 
       <form onSubmit={handleCreate} className="flex gap-2 mb-6">
         <input
@@ -4647,13 +5299,17 @@ export default function AdminCategoriesPage() {
         />
         <select
           value={newParentId}
-          onChange={(e) => setNewParentId(e.target.value ? Number(e.target.value) : "")}
+          onChange={(e) =>
+            setNewParentId(e.target.value ? Number(e.target.value) : "")
+          }
           className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           aria-label="父分类（留空为一级分类）"
         >
           <option value="">一级分类</option>
           {categories.map((cat) => (
-            <option key={cat.id} value={cat.id}>{cat.name}</option>
+            <option key={cat.id} value={cat.id}>
+              {cat.name}
+            </option>
           ))}
         </select>
         <button
@@ -4664,7 +5320,11 @@ export default function AdminCategoriesPage() {
         </button>
       </form>
 
-      {loading && <div className="text-center py-16 text-gray-400" role="status">加载中...</div>}
+      {loading && (
+        <div className="text-center py-16 text-gray-400" role="status">
+          加载中...
+        </div>
+      )}
       {!loading && (
         <div className="space-y-4">
           {categories.map((cat) => (
@@ -4681,7 +5341,10 @@ export default function AdminCategoriesPage() {
               {cat.children && cat.children.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-2">
                   {cat.children.map((child) => (
-                    <span key={child.id} className="inline-flex items-center gap-1 px-2 py-1 bg-gray-50 rounded text-sm">
+                    <span
+                      key={child.id}
+                      className="inline-flex items-center gap-1 px-2 py-1 bg-gray-50 rounded text-sm"
+                    >
                       {child.name}
                       <button
                         onClick={() => handleDelete(child.id, child.name)}
@@ -4720,9 +5383,11 @@ git commit -m "feat: add admin item review and category management pages"
 ## Task 15: Next.js API Proxy & Final Integration
 
 **Files:**
+
 - Modify: `frontend/next.config.ts`
 
 **Interfaces:**
+
 - Consumes: Backend running on port 7001 (default Midway port)
 - Produces: Next.js rewrites `/api/*` to backend server
 
@@ -4764,6 +5429,7 @@ git commit -m "feat: configure Next.js API proxy to backend"
 ## Task 16: Update Spec Verification Record
 
 **Files:**
+
 - Modify: `specs/002-campus-marketplace.md`
 
 - [ ] **Step 1: Update verification record in spec**
@@ -4785,3 +5451,4 @@ Update the "验收记录" section in `specs/002-campus-marketplace.md`:
 ```bash
 git add specs/002-campus-marketplace.md
 git commit -m "docs: update spec verification record"
+```

@@ -159,18 +159,18 @@
 
 ## 验证映射
 
-| AC | 验证方式 | 命令或可复现步骤 | 结果 / 证据 |
-| --- | --- | --- | --- |
-| AC-01 ~ AC-06 | API Test | `npm run test --workspace backend` 认证相关测试 | 待实现 |
-| AC-07 ~ AC-12 | API Test | `npm run test --workspace backend` 商品 CRUD 测试 | 待实现 |
-| AC-13 ~ AC-18 | API Test | `npm run test --workspace backend` 商品列表测试 | 待实现 |
-| AC-19 ~ AC-22 | API Test | `npm run test --workspace backend` 收藏功能测试 | 待实现 |
-| AC-23 ~ AC-25 | API Test | `npm run test --workspace backend` 订单流程测试 | 待实现 |
-| AC-26 | 并发测试 | `npm run test --workspace backend` 并发购买测试（Promise.all 模拟 10 并发） | 待实现 |
-| AC-27 ~ AC-31 | API Test | `npm run test --workspace backend` 订单状态流转测试 | 待实现 |
-| AC-32 ~ AC-37 | API Test | `npm run test --workspace backend` 后台管理测试 | 待实现 |
-| AC-38 ~ AC-43 | 组件测试 / 人工 | `npm run build --workspace frontend` + 人工验收 | 待实现 |
-| AC-44 | 人工验收 | 键盘遍历 + 辅助技术检查 | 待执行 |
+| AC            | 验证方式        | 命令或可复现步骤                                                            | 结果 / 证据 |
+| ------------- | --------------- | --------------------------------------------------------------------------- | ----------- |
+| AC-01 ~ AC-06 | API Test        | `npm run test --workspace backend` 认证相关测试                             | 待实现      |
+| AC-07 ~ AC-12 | API Test        | `npm run test --workspace backend` 商品 CRUD 测试                           | 待实现      |
+| AC-13 ~ AC-18 | API Test        | `npm run test --workspace backend` 商品列表测试                             | 待实现      |
+| AC-19 ~ AC-22 | API Test        | `npm run test --workspace backend` 收藏功能测试                             | 待实现      |
+| AC-23 ~ AC-25 | API Test        | `npm run test --workspace backend` 订单流程测试                             | 待实现      |
+| AC-26         | 并发测试        | `npm run test --workspace backend` 并发购买测试（Promise.all 模拟 10 并发） | 待实现      |
+| AC-27 ~ AC-31 | API Test        | `npm run test --workspace backend` 订单状态流转测试                         | 待实现      |
+| AC-32 ~ AC-37 | API Test        | `npm run test --workspace backend` 后台管理测试                             | 待实现      |
+| AC-38 ~ AC-43 | 组件测试 / 人工 | `npm run build --workspace frontend` + 人工验收                             | 待实现      |
+| AC-44         | 人工验收        | 键盘遍历 + 辅助技术检查                                                     | 待执行      |
 
 ## 验收记录
 
@@ -341,7 +341,7 @@ frontend/src/
 -- 在事务中执行
 BEGIN TRANSACTION;
 
-UPDATE items 
+UPDATE items
 SET available_quantity = available_quantity - ?
 WHERE id = ? AND available_quantity >= ? AND status = 'listed';
 
@@ -363,11 +363,11 @@ COMMIT;
 }
 ```
 
-| HTTP 状态码 | 错误码 | 场景 |
-|-------------|--------|------|
-| 400 | VALIDATION_ERROR | 输入校验失败 |
-| 401 | UNAUTHORIZED | 未登录 |
-| 403 | FORBIDDEN | 无权限 |
-| 404 | NOT_FOUND | 资源不存在 |
-| 409 | CONFLICT | 并发冲突 |
-| 410 | GONE | 商品已下架 |
+| HTTP 状态码 | 错误码           | 场景         |
+| ----------- | ---------------- | ------------ |
+| 400         | VALIDATION_ERROR | 输入校验失败 |
+| 401         | UNAUTHORIZED     | 未登录       |
+| 403         | FORBIDDEN        | 无权限       |
+| 404         | NOT_FOUND        | 资源不存在   |
+| 409         | CONFLICT         | 并发冲突     |
+| 410         | GONE             | 商品已下架   |

@@ -40,7 +40,11 @@ export class OrderController {
         if (msg.includes("不能购买自己")) {
           throw new httpError.ForbiddenError(msg);
         }
-        if (msg.includes("库存不足") || msg.includes("不可购买") || msg.includes("无法购买")) {
+        if (
+          msg.includes("库存不足") ||
+          msg.includes("不可购买") ||
+          msg.includes("无法购买")
+        ) {
           throw new httpError.ConflictError(msg);
         }
         throw new httpError.BadRequestError(msg);

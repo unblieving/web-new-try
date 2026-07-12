@@ -25,10 +25,7 @@ export function clearToken() {
   localStorage.removeItem("token");
 }
 
-async function request<T>(
-  path: string,
-  options: RequestInit = {}
-): Promise<T> {
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -56,7 +53,7 @@ async function request<T>(
 export async function register(
   studentId: string,
   username: string,
-  password: string
+  password: string,
 ): Promise<AuthResponse> {
   const res = await request<{ data: AuthResponse }>("/api/auth/register", {
     method: "POST",
@@ -68,7 +65,7 @@ export async function register(
 
 export async function login(
   studentId: string,
-  password: string
+  password: string,
 ): Promise<AuthResponse> {
   const res = await request<{ data: AuthResponse }>("/api/auth/login", {
     method: "POST",
@@ -100,7 +97,7 @@ export async function getCategoriesFlat(): Promise<Category[]> {
 
 // --- Items ---
 export async function getItems(
-  query: ItemListQuery = {}
+  query: ItemListQuery = {},
 ): Promise<PaginatedResult<Item>> {
   const params = new URLSearchParams();
   if (query.page) params.set("page", String(query.page));
@@ -111,7 +108,7 @@ export async function getItems(
   if (query.sortOrder) params.set("sortOrder", query.sortOrder);
   const qs = params.toString();
   const res = await request<PaginatedResult<Item>>(
-    `/api/items${qs ? `?${qs}` : ""}`
+    `/api/items${qs ? `?${qs}` : ""}`,
   );
   return res;
 }
@@ -130,7 +127,7 @@ export async function createItem(input: CreateItemInput): Promise<Item> {
 }
 
 export async function getMyItems(
-  query: ItemListQuery & { status?: string } = {}
+  query: ItemListQuery & { status?: string } = {},
 ): Promise<PaginatedResult<Item>> {
   const params = new URLSearchParams();
   if (query.page) params.set("page", String(query.page));
@@ -138,7 +135,7 @@ export async function getMyItems(
   if (query.status) params.set("status", query.status);
   const qs = params.toString();
   const res = await request<PaginatedResult<Item>>(
-    `/api/items/my${qs ? `?${qs}` : ""}`
+    `/api/items/my${qs ? `?${qs}` : ""}`,
   );
   return res;
 }
@@ -146,7 +143,7 @@ export async function getMyItems(
 // --- Orders ---
 export async function createOrder(
   itemId: number,
-  quantity = 1
+  quantity = 1,
 ): Promise<Order> {
   const res = await request<{ data: Order }>("/api/orders", {
     method: "POST",
@@ -155,18 +152,20 @@ export async function createOrder(
   return res.data;
 }
 
-export async function getMyOrders(query: {
-  page?: number;
-  pageSize?: number;
-  status?: string;
-} = {}): Promise<PaginatedResult<Order>> {
+export async function getMyOrders(
+  query: {
+    page?: number;
+    pageSize?: number;
+    status?: string;
+  } = {},
+): Promise<PaginatedResult<Order>> {
   const params = new URLSearchParams();
   if (query.page) params.set("page", String(query.page));
   if (query.pageSize) params.set("pageSize", String(query.pageSize));
   if (query.status) params.set("status", query.status);
   const qs = params.toString();
   const res = await request<PaginatedResult<Order>>(
-    `/api/orders${qs ? `?${qs}` : ""}`
+    `/api/orders${qs ? `?${qs}` : ""}`,
   );
   return res;
 }
@@ -215,27 +214,29 @@ export async function removeFavorite(itemId: number): Promise<void> {
 }
 
 export async function checkFavorite(
-  itemId: number
+  itemId: number,
 ): Promise<{ isFavorited: boolean }> {
   const res = await request<{ data: { isFavorited: boolean } }>(
-    `/api/favorites/check/${itemId}`
+    `/api/favorites/check/${itemId}`,
   );
   return res.data;
 }
 
 // --- Admin ---
-export async function adminListItems(query: {
-  page?: number;
-  pageSize?: number;
-  status?: string;
-} = {}): Promise<PaginatedResult<Item>> {
+export async function adminListItems(
+  query: {
+    page?: number;
+    pageSize?: number;
+    status?: string;
+  } = {},
+): Promise<PaginatedResult<Item>> {
   const params = new URLSearchParams();
   if (query.page) params.set("page", String(query.page));
   if (query.pageSize) params.set("pageSize", String(query.pageSize));
   if (query.status) params.set("status", query.status);
   const qs = params.toString();
   const res = await request<PaginatedResult<Item>>(
-    `/api/admin/items${qs ? `?${qs}` : ""}`
+    `/api/admin/items${qs ? `?${qs}` : ""}`,
   );
   return res;
 }

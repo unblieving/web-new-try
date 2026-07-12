@@ -12,7 +12,11 @@ import {
 } from "@midwayjs/core";
 import { Context } from "@midwayjs/koa";
 import { ItemService } from "../service/item.service";
-import { AuthMiddleware, getAuthState, requireAdmin } from "../middleware/auth.middleware";
+import {
+  AuthMiddleware,
+  getAuthState,
+  requireAdmin,
+} from "../middleware/auth.middleware";
 import { ValidationError } from "../utils/validation";
 
 @Controller("/api/items")
@@ -30,7 +34,7 @@ export class ItemController {
     @Query("categoryId") categoryId?: string,
     @Query("keyword") keyword?: string,
     @Query("sortBy") sortBy?: string,
-    @Query("sortOrder") sortOrder?: string
+    @Query("sortOrder") sortOrder?: string,
   ) {
     const result = this.itemService.list({
       page: page ? parseInt(page, 10) : undefined,
