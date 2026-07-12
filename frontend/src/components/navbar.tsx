@@ -7,58 +7,98 @@ export function Navbar() {
   const { user, loading, logout } = useAuth();
 
   return (
-    <nav className="bg-white shadow-sm border-b">
-      <div className="container mx-auto px-4 flex items-center justify-between h-14">
-        <Link href="/" className="text-lg font-bold text-blue-600">
-          校园二手交易
+    <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-blue-100 shadow-sm">
+      <div className="container mx-auto px-4 flex items-center justify-between h-16">
+        {/* Logo */}
+        <Link href="/" className="flex items-center gap-2 group">
+          <span className="text-2xl group-hover:animate-bounce">🛒</span>
+          <span className="text-lg font-bold shimmer-text">校园二手交易</span>
         </Link>
 
-        <div className="flex items-center gap-4">
-          <Link href="/" className="text-sm hover:text-blue-600">
+        {/* Navigation Links */}
+        <div className="flex items-center gap-1">
+          <NavLink href="/" icon="🏠">
             首页
-          </Link>
+          </NavLink>
 
           {loading ? (
-            <span className="text-sm text-gray-400">加载中...</span>
+            <span className="text-sm text-gray-400 px-3">加载中...</span>
           ) : user ? (
             <>
-              <Link href="/publish" className="text-sm hover:text-blue-600">
+              <NavLink href="/publish" icon="📝">
                 发布商品
-              </Link>
-              <Link href="/my-items" className="text-sm hover:text-blue-600">
+              </NavLink>
+              <NavLink href="/my-items" icon="📦">
                 我的发布
-              </Link>
-              <Link href="/my-orders" className="text-sm hover:text-blue-600">
+              </NavLink>
+              <NavLink href="/my-orders" icon="🧾">
                 我的订单
-              </Link>
-              <Link href="/favorites" className="text-sm hover:text-blue-600">
+              </NavLink>
+              <NavLink href="/favorites" icon="❤️">
                 我的收藏
-              </Link>
+              </NavLink>
               {user.role === "admin" && (
-                <Link href="/admin" className="text-sm hover:text-blue-600">
+                <NavLink href="/admin" icon="⚙️">
                   管理后台
-                </Link>
+                </NavLink>
               )}
-              <span className="text-sm text-gray-500">{user.username}</span>
-              <button
-                onClick={logout}
-                className="text-sm text-red-500 hover:text-red-700"
-              >
-                退出
-              </button>
+
+              {/* User Menu */}
+              <div className="flex items-center gap-2 ml-3 pl-3 border-l border-gray-200">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
+                  <span className="text-sm">
+                    {user.role === "admin" ? "👑" : "👤"}
+                  </span>
+                  <span className="text-sm font-medium text-blue-700">
+                    {user.username}
+                  </span>
+                </div>
+                <button
+                  onClick={logout}
+                  className="text-sm text-gray-500 hover:text-red-500 transition-colors px-2 py-1 rounded hover:bg-red-50"
+                >
+                  退出
+                </button>
+              </div>
             </>
           ) : (
-            <>
-              <Link href="/login" className="text-sm hover:text-blue-600">
+            <div className="flex items-center gap-2 ml-2">
+              <Link
+                href="/login"
+                className="text-sm px-4 py-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors font-medium"
+              >
                 登录
               </Link>
-              <Link href="/register" className="text-sm hover:text-blue-600">
+              <Link
+                href="/register"
+                className="text-sm px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600 transition-all shadow-sm hover:shadow-md font-medium"
+              >
                 注册
               </Link>
-            </>
+            </div>
           )}
         </div>
       </div>
     </nav>
+  );
+}
+
+function NavLink({
+  href,
+  icon,
+  children,
+}: {
+  href: string;
+  icon: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center gap-1 text-sm px-3 py-2 rounded-lg text-gray-600 hover:text-blue-600 hover:bg-blue-50/60 transition-all"
+    >
+      <span className="text-base">{icon}</span>
+      <span>{children}</span>
+    </Link>
   );
 }

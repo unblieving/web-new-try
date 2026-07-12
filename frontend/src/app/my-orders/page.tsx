@@ -15,10 +15,17 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  pending_payment: "bg-yellow-100 text-yellow-700",
-  paid: "bg-blue-100 text-blue-700",
-  completed: "bg-green-100 text-green-700",
-  cancelled: "bg-gray-100 text-gray-500",
+  pending_payment: "bg-amber-50 text-amber-600 border-amber-200",
+  paid: "bg-blue-50 text-blue-600 border-blue-200",
+  completed: "bg-emerald-50 text-emerald-600 border-emerald-200",
+  cancelled: "bg-gray-50 text-gray-500 border-gray-200",
+};
+
+const STATUS_ICONS: Record<string, string> = {
+  pending_payment: "💳",
+  paid: "✅",
+  completed: "🎉",
+  cancelled: "❌",
 };
 
 export default function MyOrdersPage() {
@@ -30,6 +37,9 @@ export default function MyOrdersPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [loading, setLoading] = useState(true);
   const [actionMsg, setActionMsg] = useState("");
+  const [actionMsgType, setActionMsgType] = useState<"success" | "error">(
+    "success",
+  );
   const pageSize = 10;
 
   const loadOrders = useCallback(async () => {
@@ -64,9 +74,11 @@ export default function MyOrdersPage() {
     try {
       await payOrder(id);
       setActionMsg("付款成功");
+      setActionMsgType("success");
       await loadOrders();
     } catch (err) {
       setActionMsg(err instanceof Error ? err.message : "操作失败");
+      setActionMsgType("error");
     }
   }
 
@@ -75,9 +87,11 @@ export default function MyOrdersPage() {
     try {
       await confirmOrder(id);
       setActionMsg("确认收货成功");
+      setActionMsgType("success");
       await loadOrders();
     } catch (err) {
       setActionMsg(err instanceof Error ? err.message : "操作失败");
+      setActionMsgType("error");
     }
   }
 
@@ -86,137 +100,175 @@ export default function MyOrdersPage() {
     try {
       await cancelOrder(id);
       setActionMsg("订单已取消");
+      setActionMsgType("success");
       await loadOrders();
     } catch (err) {
       setActionMsg(err instanceof Error ? err.message : "操作失败");
+      setActionMsgType("error");
     }
   }
 
   const totalPages = Math.ceil(total / pageSize);
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">我的订单</h1>
+    <div className="animate-fade-in-up">
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+          <span>🛒</span> 我的订单
+        </h1>
+        <p className="text-sm text-gray-400 mt-1">查看和管理你的所有订单</p>
+      </div>
 
-      <div className="mb-4">
+      {/* Filter */}
+      <div className="mb-6">
         <select
           value={statusFilter}
           onChange={(e) => {
             setStatusFilter(e.target.value);
             setPage(1);
           }}
-          className="border rounded px-3 py-2 text-sm"
+          className="border border-blue-200 rounded-xl px-4 py-2.5 text-sm bg-blue-50/30 focus:bg-white transition-colors cursor-pointer"
         >
-          <option value="">全部状态</option>
-          <option value="pending_payment">待付款</option>
-          <option value="paid">已付款</option>
-          <option value="completed">已完成</option>
-          <option value="cancelled">已取消</option>
+          <option value="">📋 全部状态</option>
+          <option value="pending_payment">💳 待付款</option>
+          <option value="paid">✅ 已付款</option>
+          <option value="completed">🎉 已完成</option>
+          <option value="cancelled">❌ 已取消</option>
         </select>
       </div>
 
+      {/* Action Message */}
       {actionMsg && (
         <div
-          className={`mb-4 text-sm p-3 rounded ${
-            actionMsg.includes("成功")
-              ? "bg-green-50 text-green-600"
-              : "bg-red-50 text-red-600"
+          className={`mb-6 text-sm p-4 rounded-xl border flex items-center gap-2 ${
+            actionMsgType === "success"
+              ? "bg-emerald-50 text-emerald-600 border-emerald-200"
+              : "bg-red-50 text-red-600 border-red-200"
           }`}
         >
+          <span>{actionMsgType === "success" ? "✅" : "⚠️"}</span>
           {actionMsg}
         </div>
       )}
 
+      {/* Content */}
       {loading ? (
-        <p className="text-center text-gray-400 py-12">加载中...</p>
+        <div className="text-center py-16">
+          <div className="text-4xl mb-3 animate-bounce">⏳</div>
+          <p className="text-gray-400 text-sm">加载中...</p>
+        </div>
       ) : orders.length === 0 ? (
-        <p className="text-center text-gray-400 py-12">暂无订单</p>
+        <div className="text-center py-16 bg-white rounded-2xl border border-blue-100/60">
+          <div className="text-5xl mb-3">🛒</div>
+          <p className="text-gray-400 text-sm mb-4">
+            {statusFilter ? "该状态下暂无订单" : "你还没有任何订单"}
+          </p>
+          {!statusFilter && (
+            <Link
+              href="/"
+              className="inline-block bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-6 py-2.5 rounded-xl text-sm font-medium hover:from-blue-600 hover:to-indigo-600 shadow-sm transition-all"
+            >
+              🛍️ 去逛逛校园集市
+            </Link>
+          )}
+        </div>
       ) : (
         <div className="space-y-3">
           {orders.map((order) => (
             <div
               key={order.id}
-              className="border rounded-lg p-4 flex items-center gap-4"
+              className="bg-white border border-blue-100/60 rounded-xl p-5 hover:shadow-md hover:border-blue-200 transition-all"
             >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs text-gray-400">
-                    订单号: {order.orderNo}
+              {/* Order Header */}
+              <div className="flex items-center justify-between mb-3 pb-3 border-b border-blue-50">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-gray-400 font-mono">
+                    #{order.orderNo}
                   </span>
                   <span
-                    className={`px-2 py-0.5 rounded text-xs ${STATUS_COLORS[order.status] ?? "bg-gray-100"}`}
+                    className={`px-3 py-1 rounded-lg text-xs font-medium border ${STATUS_COLORS[order.status] ?? "bg-gray-50 border-gray-200"}`}
                   >
+                    {STATUS_ICONS[order.status] ?? "📋"}{" "}
                     {STATUS_LABELS[order.status] ?? order.status}
                   </span>
                 </div>
-                {order.item && (
-                  <Link
-                    href={`/items/${order.item.id}`}
-                    className="text-sm font-medium hover:text-blue-600"
-                  >
-                    {order.item.title}
-                  </Link>
-                )}
-                <div className="text-xs text-gray-500 mt-1">
-                  <span>数量: {order.quantity}</span>
-                  <span className="ml-3">
-                    总价: ¥{order.totalPrice.toFixed(2)}
-                  </span>
-                  <span className="ml-3">
-                    {new Date(order.createdAt).toLocaleString("zh-CN")}
-                  </span>
-                </div>
+                <span className="text-xs text-gray-400">
+                  {new Date(order.createdAt).toLocaleString("zh-CN")}
+                </span>
               </div>
 
-              <div className="flex gap-2 flex-shrink-0">
-                {order.status === "pending_payment" && (
-                  <>
-                    <button
-                      onClick={() => handlePay(order.id)}
-                      className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
+              {/* Order Body */}
+              <div className="flex items-center justify-between">
+                <div className="flex-1 min-w-0">
+                  {order.item && (
+                    <Link
+                      href={`/items/${order.item.id}`}
+                      className="text-sm font-medium text-gray-800 hover:text-blue-600 transition-colors"
                     >
-                      模拟付款
-                    </button>
+                      {order.item.title}
+                    </Link>
+                  )}
+                  <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                    <span>📦 数量: {order.quantity}</span>
+                    <span className="text-red-500 font-bold text-sm">
+                      ¥{order.totalPrice.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-2 flex-shrink-0 ml-4">
+                  {order.status === "pending_payment" && (
+                    <>
+                      <button
+                        onClick={() => handlePay(order.id)}
+                        className="px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl text-xs font-medium hover:from-blue-600 hover:to-indigo-600 shadow-sm transition-all"
+                      >
+                        💳 模拟付款
+                      </button>
+                      <button
+                        onClick={() => handleCancel(order.id)}
+                        className="px-4 py-2 border border-gray-200 text-gray-600 rounded-xl text-xs hover:bg-gray-50 transition-colors"
+                      >
+                        取消
+                      </button>
+                    </>
+                  )}
+                  {order.status === "paid" && (
                     <button
-                      onClick={() => handleCancel(order.id)}
-                      className="px-3 py-1 border border-gray-300 rounded text-xs hover:bg-gray-50"
+                      onClick={() => handleConfirm(order.id)}
+                      className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-xl text-xs font-medium hover:from-emerald-600 hover:to-green-600 shadow-sm transition-all"
                     >
-                      取消
+                      ✅ 确认收货
                     </button>
-                  </>
-                )}
-                {order.status === "paid" && (
-                  <button
-                    onClick={() => handleConfirm(order.id)}
-                    className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700"
-                  >
-                    确认收货
-                  </button>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           ))}
         </div>
       )}
 
+      {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex justify-center items-center gap-2 mt-8">
+        <div className="flex justify-center items-center gap-3 mt-8">
           <button
             disabled={page <= 1}
             onClick={() => setPage((p) => p - 1)}
-            className="px-3 py-1 border rounded text-sm disabled:opacity-40"
+            className="px-4 py-2 border border-blue-200 rounded-xl text-sm disabled:opacity-40 hover:bg-blue-50 transition-colors"
           >
-            上一页
+            ← 上一页
           </button>
-          <span className="text-sm text-gray-500">
+          <span className="text-sm text-gray-500 bg-white px-4 py-2 rounded-xl border border-blue-100/60">
             {page} / {totalPages}
           </span>
           <button
             disabled={page >= totalPages}
             onClick={() => setPage((p) => p + 1)}
-            className="px-3 py-1 border rounded text-sm disabled:opacity-40"
+            className="px-4 py-2 border border-blue-200 rounded-xl text-sm disabled:opacity-40 hover:bg-blue-50 transition-colors"
           >
-            下一页
+            下一页 →
           </button>
         </div>
       )}

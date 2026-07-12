@@ -2,8 +2,21 @@
 
 :root {
   color-scheme: light;
-  --background: #f8fafc;
+  --background: #f0f7ff;
   --foreground: #0f172a;
+  --primary: #2563eb;
+  --primary-light: #60a5fa;
+  --primary-dark: #1d4ed8;
+  --accent: #8b5cf6;
+  --surface: #ffffff;
+  --surface-hover: #f8fafc;
+  --border: #e2e8f0;
+  --border-focus: #93c5fd;
+  --text-muted: #64748b;
+  --text-light: #94a3b8;
+  --success: #10b981;
+  --danger: #ef4444;
+  --warning: #f59e0b;
 }
 
 * {
@@ -12,6 +25,7 @@
 
 html {
   background: var(--background);
+  scroll-behavior: smooth;
 }
 
 body {
@@ -20,10 +34,141 @@ body {
   color: var(--foreground);
   background:
     radial-gradient(
-      circle at 80% 5%,
-      rgb(219 234 254 / 70%),
-      transparent 28rem
+      ellipse at 20% 0%,
+      rgb(191 219 254 / 50%),
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse at 80% 5%,
+      rgb(196 181 253 / 30%),
+      transparent 40%
+    ),
+    radial-gradient(
+      ellipse at 50% 100%,
+      rgb(186 230 253 / 30%),
+      transparent 50%
     ),
     var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC",
+    "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+/* Animated gradient shimmer for special elements */
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(37 99 235 / 20%);
+  }
+  50% {
+    box-shadow: 0 0 20px 4px rgb(37 99 235 / 15%);
+  }
+}
+
+.shimmer-text {
+  background: linear-gradient(
+    90deg,
+    var(--primary) 0%,
+    var(--accent) 25%,
+    var(--primary-light) 50%,
+    var(--accent) 75%,
+    var(--primary) 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 4s linear infinite;
+}
+
+.card-hover {
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 12px 24px -8px rgb(37 99 235 / 12%),
+    0 4px 8px -2px rgb(0 0 0 / 6%);
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.4s ease-out both;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-light);
+}
+
+/* Gradient border input focus */
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--border-focus) !important;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 10%);
+}
+
+/* Sticker decorations */
+.sticker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  filter: drop-shadow(0 2px 4px rgb(0 0 0 / 10%));
+  transition: transform 0.2s ease;
+}
+
+.sticker:hover {
+  transform: scale(1.2) rotate(-5deg);
 }
