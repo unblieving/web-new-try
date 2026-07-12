@@ -44,7 +44,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- Auth initialization on mount
     fetchUser().then((me) => {
       if (!cancelled) {
         setUser(me);

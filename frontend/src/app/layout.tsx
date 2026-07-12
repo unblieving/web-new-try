@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AuthProvider } from "@/lib/auth-context";
+import { Navbar } from "@/components/navbar";
 
 export const metadata: Metadata = {
-  title: "Web 开发课程",
-  description: "一个可以逐步扩展的全栈 Web 课程项目",
+  title: "校园二手交易平台",
+  description: "校园二手交易与闲置物品流转平台",
 };
 
 export default function RootLayout({
@@ -13,7 +15,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN">
-      <body>{children}</body>
+      <body>
+        <AuthProvider>
+          <Navbar />
+          <main className="container mx-auto px-4 py-6">{children}</main>
+        </AuthProvider>
+      </body>
     </html>
   );
 }
