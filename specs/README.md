@@ -23,7 +23,7 @@
 
 ## 编号与命名
 
-- 文件名使用 `NNN-kebab-case.md`，例如 `002-course-search.md`；`NNN` 为三位递增编号，slug 使用小写英文和连字符。
+- 文件名使用 `NNN-kebab-case.md`，例如 `002-campus-marketplace.md`；`NNN` 为三位递增编号，slug 使用小写英文和连字符。
 - 标题使用 `# NNN：中文功能名`，编号与文件名一致。
 - 新编号取现有最大编号加一；编号一经使用不重排、不复用。`README.md` 与 `_template.md` 不参与编号。
 - 一个 Spec 对应一项可独立验收的用户能力。范围过大时按用户结果拆分，不按前端、后端或文件目录拆分。

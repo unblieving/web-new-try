@@ -64,7 +64,7 @@ operation 级追溯统一使用以下结构，验收标准 ID 一经引用不得
 
 ```yaml
 x-spec:
-  file: specs/001-course-catalog.md
+  file: specs/002-campus-marketplace.md
   acceptanceCriteria: [AC-01, AC-02]
 ```
 
