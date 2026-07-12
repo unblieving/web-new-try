@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { cancelOrder, confirmOrder, getMyOrders, payOrder } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
-import type { Order, PaginatedResult } from "@/lib/types";
+import type { Order } from "@/lib/types";
 
 const STATUS_LABELS: Record<string, string> = {
   pending_payment: "待付款",
@@ -32,32 +32,26 @@ export default function MyOrdersPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("");
   const [loading, setLoading] = useState(true);
   const [actionMsg, setActionMsg] = useState("");
   const [actionMsgType, setActionMsgType] = useState<"success" | "error">(
     "success",
   );
-  const pageSize = 10;
 
   const loadOrders = useCallback(async () => {
     setLoading(true);
     try {
-      const result: PaginatedResult<Order> = await getMyOrders({
-        page,
-        pageSize,
+      const result = await getMyOrders({
         status: statusFilter || undefined,
       });
-      setOrders(result.data);
-      setTotal(result.total);
+      setOrders(result);
     } catch {
       /* ignore */
     } finally {
       setLoading(false);
     }
-  }, [page, statusFilter]);
+  }, [statusFilter]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- Load orders
@@ -108,8 +102,6 @@ export default function MyOrdersPage() {
     }
   }
 
-  const totalPages = Math.ceil(total / pageSize);
-
   return (
     <div className="animate-fade-in-up">
       {/* Header */}
@@ -126,7 +118,6 @@ export default function MyOrdersPage() {
           value={statusFilter}
           onChange={(e) => {
             setStatusFilter(e.target.value);
-            setPage(1);
           }}
           className="border border-blue-200 rounded-xl px-4 py-2.5 text-sm bg-blue-50/30 focus:bg-white transition-colors cursor-pointer"
         >
@@ -250,28 +241,6 @@ export default function MyOrdersPage() {
         </div>
       )}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-center items-center gap-3 mt-8">
-          <button
-            disabled={page <= 1}
-            onClick={() => setPage((p) => p - 1)}
-            className="px-4 py-2 border border-blue-200 rounded-xl text-sm disabled:opacity-40 hover:bg-blue-50 transition-colors"
-          >
-            ← 上一页
-          </button>
-          <span className="text-sm text-gray-500 bg-white px-4 py-2 rounded-xl border border-blue-100/60">
-            {page} / {totalPages}
-          </span>
-          <button
-            disabled={page >= totalPages}
-            onClick={() => setPage((p) => p + 1)}
-            className="px-4 py-2 border border-blue-200 rounded-xl text-sm disabled:opacity-40 hover:bg-blue-50 transition-colors"
-          >
-            下一页 →
-          </button>
-        </div>
-      )}
     </div>
   );
 }

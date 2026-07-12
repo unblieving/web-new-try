@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getMyItems } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
-import type { Item, PaginatedResult } from "@/lib/types";
+import type { Item } from "@/lib/types";
 
 const STATUS_LABELS: Record<string, string> = {
   pending_review: "审核中",
@@ -38,28 +38,22 @@ export default function MyItemsPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [items, setItems] = useState<Item[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("");
   const [loading, setLoading] = useState(true);
-  const pageSize = 10;
 
   const loadItems = useCallback(async () => {
     setLoading(true);
     try {
-      const result: PaginatedResult<Item> = await getMyItems({
-        page,
-        pageSize,
+      const result = await getMyItems({
         status: statusFilter || undefined,
       });
-      setItems(result.data);
-      setTotal(result.total);
+      setItems(result);
     } catch {
       /* ignore */
     } finally {
       setLoading(false);
     }
-  }, [page, statusFilter]);
+  }, [statusFilter]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- Load my items
@@ -70,8 +64,6 @@ export default function MyItemsPage() {
     router.push("/login");
     return null;
   }
-
-  const totalPages = Math.ceil(total / pageSize);
 
   return (
     <div className="animate-fade-in-up">
@@ -99,7 +91,6 @@ export default function MyItemsPage() {
           value={statusFilter}
           onChange={(e) => {
             setStatusFilter(e.target.value);
-            setPage(1);
           }}
           className="border border-blue-200 rounded-xl px-4 py-2.5 text-sm bg-blue-50/30 focus:bg-white transition-colors cursor-pointer"
         >
@@ -177,28 +168,6 @@ export default function MyItemsPage() {
         </div>
       )}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-center items-center gap-3 mt-8">
-          <button
-            disabled={page <= 1}
-            onClick={() => setPage((p) => p - 1)}
-            className="px-4 py-2 border border-blue-200 rounded-xl text-sm disabled:opacity-40 hover:bg-blue-50 transition-colors"
-          >
-            ← 上一页
-          </button>
-          <span className="text-sm text-gray-500 bg-white px-4 py-2 rounded-xl border border-blue-100/60">
-            {page} / {totalPages}
-          </span>
-          <button
-            disabled={page >= totalPages}
-            onClick={() => setPage((p) => p + 1)}
-            className="px-4 py-2 border border-blue-200 rounded-xl text-sm disabled:opacity-40 hover:bg-blue-50 transition-colors"
-          >
-            下一页 →
-          </button>
-        </div>
-      )}
     </div>
   );
 }

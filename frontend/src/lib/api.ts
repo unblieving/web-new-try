@@ -127,15 +127,13 @@ export async function createItem(input: CreateItemInput): Promise<Item> {
 }
 
 export async function getMyItems(
-  query: ItemListQuery & { status?: string } = {},
-): Promise<PaginatedResult<Item>> {
+  query: { status?: string } = {},
+): Promise<Item[]> {
   const params = new URLSearchParams();
-  if (query.page) params.set("page", String(query.page));
-  if (query.pageSize) params.set("pageSize", String(query.pageSize));
   if (query.status) params.set("status", query.status);
   const qs = params.toString();
-  const res = await request<{ data: PaginatedResult<Item> }>(
-    `/api/items/my${qs ? `?${qs}` : ""}`,
+  const res = await request<{ data: Item[] }>(
+    `/api/items/my/listings${qs ? `?${qs}` : ""}`,
   );
   return res.data;
 }
@@ -154,17 +152,13 @@ export async function createOrder(
 
 export async function getMyOrders(
   query: {
-    page?: number;
-    pageSize?: number;
     status?: string;
   } = {},
-): Promise<PaginatedResult<Order>> {
+): Promise<Order[]> {
   const params = new URLSearchParams();
-  if (query.page) params.set("page", String(query.page));
-  if (query.pageSize) params.set("pageSize", String(query.pageSize));
   if (query.status) params.set("status", query.status);
   const qs = params.toString();
-  const res = await request<{ data: PaginatedResult<Order> }>(
+  const res = await request<{ data: Order[] }>(
     `/api/orders${qs ? `?${qs}` : ""}`,
   );
   return res.data;
@@ -225,17 +219,13 @@ export async function checkFavorite(
 // --- Admin ---
 export async function adminListItems(
   query: {
-    page?: number;
-    pageSize?: number;
     status?: string;
   } = {},
-): Promise<PaginatedResult<Item>> {
+): Promise<Item[]> {
   const params = new URLSearchParams();
-  if (query.page) params.set("page", String(query.page));
-  if (query.pageSize) params.set("pageSize", String(query.pageSize));
   if (query.status) params.set("status", query.status);
   const qs = params.toString();
-  const res = await request<{ data: PaginatedResult<Item> }>(
+  const res = await request<{ data: Item[] }>(
     `/api/admin/items${qs ? `?${qs}` : ""}`,
   );
   return res.data;
@@ -256,9 +246,8 @@ export async function rejectItem(id: number, reason: string): Promise<Item> {
   return res.data;
 }
 
-export async function removeItem(id: number): Promise<Item> {
-  const res = await request<{ data: Item }>(`/api/admin/items/${id}/remove`, {
-    method: "POST",
+export async function removeItem(id: number): Promise<void> {
+  await request(`/api/admin/items/${id}`, {
+    method: "DELETE",
   });
-  return res.data;
 }

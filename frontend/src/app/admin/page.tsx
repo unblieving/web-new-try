@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { adminListItems, approveItem, rejectItem, removeItem } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
-import type { Item, PaginatedResult } from "@/lib/types";
+import type { Item } from "@/lib/types";
 
 const STATUS_LABELS: Record<string, string> = {
   pending_review: "审核中",
@@ -38,8 +38,6 @@ export default function AdminPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [items, setItems] = useState<Item[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("");
   const [loading, setLoading] = useState(true);
   const [actionMsg, setActionMsg] = useState("");
@@ -48,24 +46,20 @@ export default function AdminPage() {
   );
   const [rejectingId, setRejectingId] = useState<number | null>(null);
   const [rejectReason, setRejectReason] = useState("");
-  const pageSize = 10;
 
   const loadItems = useCallback(async () => {
     setLoading(true);
     try {
-      const result: PaginatedResult<Item> = await adminListItems({
-        page,
-        pageSize,
+      const result = await adminListItems({
         status: statusFilter || undefined,
       });
-      setItems(result.data);
-      setTotal(result.total);
+      setItems(result);
     } catch {
       /* ignore */
     } finally {
       setLoading(false);
     }
-  }, [page, statusFilter]);
+  }, [statusFilter]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- Load admin items
@@ -133,8 +127,6 @@ export default function AdminPage() {
     );
   }
 
-  const totalPages = Math.ceil(total / pageSize);
-
   return (
     <div className="animate-fade-in-up">
       {/* Header */}
@@ -153,7 +145,6 @@ export default function AdminPage() {
           value={statusFilter}
           onChange={(e) => {
             setStatusFilter(e.target.value);
-            setPage(1);
           }}
           className="border border-blue-200 rounded-xl px-4 py-2.5 text-sm bg-blue-50/30 focus:bg-white transition-colors cursor-pointer"
         >
@@ -166,7 +157,7 @@ export default function AdminPage() {
           <option value="removed">📦 已下架</option>
         </select>
         <span className="text-sm text-gray-500 bg-white px-4 py-2.5 rounded-xl border border-blue-100/60">
-          📊 共 <span className="font-medium text-blue-600">{total}</span>{" "}
+          📊 共 <span className="font-medium text-blue-600">{items.length}</span>{" "}
           件商品
         </span>
       </div>
@@ -313,28 +304,6 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-center items-center gap-3 mt-8">
-          <button
-            disabled={page <= 1}
-            onClick={() => setPage((p) => p - 1)}
-            className="px-4 py-2 border border-blue-200 rounded-xl text-sm disabled:opacity-40 hover:bg-blue-50 transition-colors"
-          >
-            ← 上一页
-          </button>
-          <span className="text-sm text-gray-500 bg-white px-4 py-2 rounded-xl border border-blue-100/60">
-            {page} / {totalPages}
-          </span>
-          <button
-            disabled={page >= totalPages}
-            onClick={() => setPage((p) => p + 1)}
-            className="px-4 py-2 border border-blue-200 rounded-xl text-sm disabled:opacity-40 hover:bg-blue-50 transition-colors"
-          >
-            下一页 →
-          </button>
-        </div>
-      )}
     </div>
   );
 }
