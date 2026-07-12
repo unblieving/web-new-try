@@ -52,8 +52,10 @@ export class ItemService {
     params.push("listed");
 
     if (query.categoryId) {
-      conditions.push("i.category_id = ?");
-      params.push(query.categoryId);
+      conditions.push(
+        "i.category_id IN (SELECT id FROM categories WHERE id = ? OR parent_id = ?)",
+      );
+      params.push(query.categoryId, query.categoryId);
     }
 
     if (query.keyword) {
