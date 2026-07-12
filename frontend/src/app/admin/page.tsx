@@ -134,9 +134,7 @@ export default function AdminPage() {
         <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
           <span>🛡️</span> 后台管理 - 商品审核
         </h1>
-        <p className="text-sm text-gray-400 mt-1">
-          审核和管理平台上的所有商品
-        </p>
+        <p className="text-sm text-gray-400 mt-1">审核和管理平台上的所有商品</p>
       </div>
 
       {/* Filter & Stats */}
@@ -157,7 +155,8 @@ export default function AdminPage() {
           <option value="removed">📦 已下架</option>
         </select>
         <span className="text-sm text-gray-500 bg-white px-4 py-2.5 rounded-xl border border-blue-100/60">
-          📊 共 <span className="font-medium text-blue-600">{items.length}</span>{" "}
+          📊 共{" "}
+          <span className="font-medium text-blue-600">{items.length}</span>{" "}
           件商品
         </span>
       </div>
@@ -231,8 +230,7 @@ export default function AdminPage() {
                     <span>👤 卖家: {item.seller?.username ?? "未知"}</span>
                     <span>📦 库存: {item.quantity}</span>
                     <span>
-                      🕐{" "}
-                      {new Date(item.createdAt).toLocaleString("zh-CN")}
+                      🕐 {new Date(item.createdAt).toLocaleString("zh-CN")}
                     </span>
                   </div>
                   {item.rejectReason && (
@@ -260,8 +258,7 @@ export default function AdminPage() {
                       </button>
                     </>
                   )}
-                  {(item.status === "listed" ||
-                    item.status === "reserved") && (
+                  {(item.status === "listed" || item.status === "reserved") && (
                     <button
                       onClick={() => handleRemove(item.id)}
                       className="px-4 py-2 border border-gray-200 text-gray-600 rounded-xl text-xs hover:bg-gray-50 transition-colors"
@@ -303,7 +300,6 @@ export default function AdminPage() {
           ))}
         </div>
       )}
-
     </div>
   );
 }

@@ -84,9 +84,7 @@ export default function FavoritesPage() {
       ) : favorites.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-2xl border border-blue-100/60">
           <div className="text-5xl mb-3">💔</div>
-          <p className="text-gray-400 text-sm mb-4">
-            你还没有收藏过任何商品
-          </p>
+          <p className="text-gray-400 text-sm mb-4">你还没有收藏过任何商品</p>
           <Link
             href="/"
             className="inline-block bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-6 py-2.5 rounded-xl text-sm font-medium hover:from-blue-600 hover:to-indigo-600 shadow-sm transition-all"
@@ -131,8 +129,7 @@ export default function FavoritesPage() {
                     </p>
                   )}
                   <p className="text-xs text-gray-400 mt-1">
-                    ❤️ 收藏于{" "}
-                    {new Date(fav.createdAt).toLocaleString("zh-CN")}
+                    ❤️ 收藏于 {new Date(fav.createdAt).toLocaleString("zh-CN")}
                   </p>
                 </div>
 

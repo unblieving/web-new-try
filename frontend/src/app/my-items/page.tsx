@@ -73,9 +73,7 @@ export default function MyItemsPage() {
           <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
             <span>📦</span> 我的发布
           </h1>
-          <p className="text-sm text-gray-400 mt-1">
-            管理你发布的所有商品
-          </p>
+          <p className="text-sm text-gray-400 mt-1">管理你发布的所有商品</p>
         </div>
         <Link
           href="/publish"
@@ -167,7 +165,6 @@ export default function MyItemsPage() {
           ))}
         </div>
       )}
-
     </div>
   );
 }

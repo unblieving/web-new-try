@@ -136,7 +136,9 @@ export default function HomePage() {
           <select
             value={categoryId ?? ""}
             onChange={(e) => {
-              setCategoryId(e.target.value ? Number(e.target.value) : undefined);
+              setCategoryId(
+                e.target.value ? Number(e.target.value) : undefined,
+              );
               setPage(1);
             }}
             className="px-4 py-2.5 text-sm border border-blue-200 rounded-lg bg-white focus:border-blue-400 transition-colors cursor-pointer"
@@ -210,8 +212,8 @@ export default function HomePage() {
       {/* Results count */}
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-gray-500">
-          共找到{" "}
-          <span className="font-semibold text-blue-600">{total}</span> 件好物
+          共找到 <span className="font-semibold text-blue-600">{total}</span>{" "}
+          件好物
         </p>
         <div className="flex gap-1">
           {STICKERS.slice(0, 4).map((s, i) => (
@@ -306,10 +308,7 @@ export default function HomePage() {
           <div className="flex items-center gap-1">
             {Array.from({ length: totalPages }, (_, i) => i + 1)
               .filter(
-                (p) =>
-                  p === 1 ||
-                  p === totalPages ||
-                  Math.abs(p - page) <= 1,
+                (p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1,
               )
               .map((p, idx, arr) => (
                 <span key={p} className="flex items-center">
