@@ -103,7 +103,7 @@ export default function LoginPage() {
         <div className="mt-4 bg-blue-50/50 rounded-xl p-4 border border-blue-100/50 text-center">
           <p className="text-xs text-gray-400">
             💡 演示账号：学号 <code className="text-blue-500">2024001</code> ~{" "}
-            <code className="text-blue-500">2024006</code>，密码任意
+            <code className="text-blue-500">2024006</code>，密码 <code className="text-blue-500">123456</code>
           </p>
         </div>
       </div>

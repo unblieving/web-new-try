@@ -2,6 +2,7 @@ import { Config, Destroy, Init, Provide } from "@midwayjs/core";
 import { mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import { randomBytes, scryptSync } from "node:crypto";
 
 @Provide()
 export class DatabaseService {
@@ -180,8 +181,11 @@ export class DatabaseService {
       "INSERT INTO users (student_id, username, password_hash, role) VALUES (?, ?, ?, ?)",
     );
 
-    // Simple password hash for demo users (password: 123456)
-    const demoHash = "demo:00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+    // Generate real password hash for demo users (password: 123456)
+    const demoPassword = "123456";
+    const salt = randomBytes(16).toString("hex");
+    const hash = scryptSync(demoPassword, salt, 64).toString("hex");
+    const demoHash = `${salt}:${hash}`;
 
     const users = [
       { studentId: "2024001", username: "小明同学", role: "user" },

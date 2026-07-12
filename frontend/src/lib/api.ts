@@ -10,7 +10,7 @@ import type {
   User,
 } from "./types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:7001";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -107,10 +107,10 @@ export async function getItems(
   if (query.sortBy) params.set("sortBy", query.sortBy);
   if (query.sortOrder) params.set("sortOrder", query.sortOrder);
   const qs = params.toString();
-  const res = await request<PaginatedResult<Item>>(
+  const res = await request<{ data: PaginatedResult<Item> }>(
     `/api/items${qs ? `?${qs}` : ""}`,
   );
-  return res;
+  return res.data;
 }
 
 export async function getItem(id: number): Promise<Item> {
@@ -134,10 +134,10 @@ export async function getMyItems(
   if (query.pageSize) params.set("pageSize", String(query.pageSize));
   if (query.status) params.set("status", query.status);
   const qs = params.toString();
-  const res = await request<PaginatedResult<Item>>(
+  const res = await request<{ data: PaginatedResult<Item> }>(
     `/api/items/my${qs ? `?${qs}` : ""}`,
   );
-  return res;
+  return res.data;
 }
 
 // --- Orders ---
@@ -164,10 +164,10 @@ export async function getMyOrders(
   if (query.pageSize) params.set("pageSize", String(query.pageSize));
   if (query.status) params.set("status", query.status);
   const qs = params.toString();
-  const res = await request<PaginatedResult<Order>>(
+  const res = await request<{ data: PaginatedResult<Order> }>(
     `/api/orders${qs ? `?${qs}` : ""}`,
   );
-  return res;
+  return res.data;
 }
 
 export async function getOrder(id: number): Promise<Order> {
@@ -235,10 +235,10 @@ export async function adminListItems(
   if (query.pageSize) params.set("pageSize", String(query.pageSize));
   if (query.status) params.set("status", query.status);
   const qs = params.toString();
-  const res = await request<PaginatedResult<Item>>(
+  const res = await request<{ data: PaginatedResult<Item> }>(
     `/api/admin/items${qs ? `?${qs}` : ""}`,
   );
-  return res;
+  return res.data;
 }
 
 export async function approveItem(id: number): Promise<Item> {
