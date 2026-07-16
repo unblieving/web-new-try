@@ -16,12 +16,14 @@
 先查询商品列表，再逐条查询每个商品的卖家和分类信息，导致数据库查询次数随商品数量线性增长。
 
 **优化措施：**
+
 - 在 `items` 表的 `status`、`category_id`、`seller_id` 字段上建立索引，加速条件查询和 JOIN 操作。
 - 在 `orders` 表的 `buyer_id`、`item_id` 字段上建立索引，加速"我的订单"查询。
 - 在 `favorites` 表的 `user_id` 字段上建立索引，并设置 `UNIQUE(user_id, item_id)` 约束。
 - 使用 SQLite 的 WAL（Write-Ahead Logging）模式，允许读写并发执行，避免读操作被写操作阻塞。
 
 **相关代码：**
+
 ```sql
 -- database.service.ts
 PRAGMA journal_mode = WAL;
@@ -40,6 +42,7 @@ CREATE INDEX IF NOT EXISTS idx_favorites_user ON favorites(user_id);
 在商品数量较多时出现明显的加载延迟和页面闪烁。
 
 **优化措施：**
+
 - 使用 Next.js App Router 的 React Server Components（RSC），在服务端完成数据获取和 HTML 渲染，
   减少客户端 JavaScript 体积和首屏加载时间。
 - 商品详情页使用动态路由 `[id]/page.tsx`，按需获取单个商品数据。
@@ -53,12 +56,14 @@ CREATE INDEX IF NOT EXISTS idx_favorites_user ON favorites(user_id);
 初始 Docker 镜像包含完整的 `node_modules` 和构建工具，镜像体积过大。
 
 **优化措施：**
+
 - 采用多阶段构建（multi-stage build），构建阶段安装依赖并编译，运行阶段仅拷贝产物。
 - 使用 `node:24-alpine` 作为基础镜像，减小镜像体积。
 - 利用 Docker 层缓存，将 `package.json` 拷贝和 `npm ci` 放在独立层，
   代码变更时不需要重新安装依赖。
 
 **相关代码：**
+
 ```dockerfile
 # infra/backend.Dockerfile
 FROM node:24-alpine AS build
@@ -106,6 +111,7 @@ CMD ["npm", "run", "start", "--workspace", "backend"]
 阻止其他写事务并发执行，将"查库存 → 扣库存 → 创建订单"序列化为原子操作。
 
 **关键代码（order.service.ts）：**
+
 ```typescript
 createOrder(buyerId: number, input: CreateOrderInput): Order {
   // ... 前置校验 ...
@@ -144,6 +150,7 @@ createOrder(buyerId: number, input: CreateOrderInput): Order {
 ```
 
 **为什么选择 BEGIN IMMEDIATE 而非 BEGIN DEFERRED：**
+
 - `BEGIN DEFERRED`（默认）在第一次写操作时才获取写锁，
   如果两个事务同时开始并各自读取，然后在写入时互相等待对方释放读锁，会产生死锁。
 - `BEGIN IMMEDIATE` 在事务开始时就获取写锁，其他写事务会立即收到 `SQLITE_BUSY` 错误并等待，
@@ -208,12 +215,12 @@ confirmReceipt(orderId: number, buyerId: number): Order {
 
 编写了完整的并发测试用例（`backend/test/concurrency.test.mts`），覆盖以下场景：
 
-| 测试场景 | 预期结果 | 验证方式 |
-|---------|---------|---------|
-| 5 个买家同时抢购库存为 1 的商品 | 仅 1 人成功，4 人失败 | `assert.equal(fulfilled.length, 1)` |
-| 5 个买家同时抢购库存为 3 的商品 | 恰好 3 人成功，2 人失败 | `assert.equal(fulfilled.length, 3)` |
-| 并发购买 + 取消后库存一致性 | 库存 + 活跃订单 = 原始数量 | `assert.equal(stock + activeOrders, 1)` |
-| 5 个并发购买库存为 2 的商品 | 恰好 2 人成功，3 人失败 | `assert.equal(successes.length, 2)` |
+| 测试场景                        | 预期结果                   | 验证方式                                |
+| ------------------------------- | -------------------------- | --------------------------------------- |
+| 5 个买家同时抢购库存为 1 的商品 | 仅 1 人成功，4 人失败      | `assert.equal(fulfilled.length, 1)`     |
+| 5 个买家同时抢购库存为 3 的商品 | 恰好 3 人成功，2 人失败    | `assert.equal(fulfilled.length, 3)`     |
+| 并发购买 + 取消后库存一致性     | 库存 + 活跃订单 = 原始数量 | `assert.equal(stock + activeOrders, 1)` |
+| 5 个并发购买库存为 2 的商品     | 恰好 2 人成功，3 人失败    | `assert.equal(successes.length, 2)`     |
 
 所有测试均通过，验证了并发安全方案的有效性。
 
@@ -222,30 +229,34 @@ confirmReceipt(orderId: number, buyerId: number): Order {
 ## 四、其他安全措施
 
 ### 4.1 输入验证
+
 - 所有 API 入参在 Controller 层进行类型和范围校验（`validation.ts`）。
 - 使用 `requirePositiveInt` 等工具函数确保 ID、数量等参数合法。
 
 ### 4.2 权限控制
+
 - 使用 JWT Token 进行身份认证（`auth.middleware.ts`）。
 - 订单操作校验 `buyerId` / `sellerId` 与当前用户一致，防止越权操作。
 - 管理员接口校验 `role === 'admin'`。
 
 ### 4.3 密码安全
+
 - 使用 `scrypt` 算法加盐哈希存储密码，不使用明文或简单哈希。
 - 每次注册生成独立随机盐值。
 
 ### 4.4 SQL 注入防护
+
 - 所有 SQL 查询使用参数化语句（`?` 占位符），不拼接用户输入。
 
 ---
 
 ## 五、总结
 
-| 问题类型 | 具体问题 | 解决方案 | 效果 |
-|---------|---------|---------|------|
-| 性能 | N+1 查询 | 数据库索引 + WAL 模式 | 查询延迟降低 |
-| 性能 | 前端加载慢 | RSC 服务端渲染 + 乐观更新 | 首屏加载加速 |
-| 性能 | 镜像体积大 | 多阶段构建 + Alpine 基础镜像 | 镜像体积减小 |
-| 竞态 | 商品超卖 | BEGIN IMMEDIATE 事务 + 事务内二次校验 | 并发安全 |
-| 竞态 | 取消订单库存丢失 | BEGIN IMMEDIATE 原子恢复 | 数据一致性 |
-| 竞态 | 确认收货状态不一致 | BEGIN IMMEDIATE 原子更新 | 数据一致性 |
+| 问题类型 | 具体问题           | 解决方案                              | 效果         |
+| -------- | ------------------ | ------------------------------------- | ------------ |
+| 性能     | N+1 查询           | 数据库索引 + WAL 模式                 | 查询延迟降低 |
+| 性能     | 前端加载慢         | RSC 服务端渲染 + 乐观更新             | 首屏加载加速 |
+| 性能     | 镜像体积大         | 多阶段构建 + Alpine 基础镜像          | 镜像体积减小 |
+| 竞态     | 商品超卖           | BEGIN IMMEDIATE 事务 + 事务内二次校验 | 并发安全     |
+| 竞态     | 取消订单库存丢失   | BEGIN IMMEDIATE 原子恢复              | 数据一致性   |
+| 竞态     | 确认收货状态不一致 | BEGIN IMMEDIATE 原子更新              | 数据一致性   |
