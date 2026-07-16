@@ -178,10 +178,17 @@ export function createTestDb(): TestDb {
   }
 
   function createCategory(name: string): number {
-    const result = db
-      .prepare("INSERT INTO categories (name) VALUES (?)")
-      .run(name);
-    return Number(result.lastInsertRowid);
+    // Insert if not exists, otherwise do nothing
+    db.prepare("INSERT OR IGNORE INTO categories (name) VALUES (?)").run(name);
+
+    // Return the id of the existing or newly inserted category
+    const row = db
+      .prepare("SELECT id FROM categories WHERE name = ?")
+      .get(name) as { id: number } | undefined;
+    if (!row) {
+      throw new Error("Failed to create or find category");
+    }
+    return Number(row.id);
   }
 
   function createItem(
