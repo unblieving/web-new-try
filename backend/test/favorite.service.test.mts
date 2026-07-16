@@ -26,26 +26,28 @@ function addFavorite(userId: number, itemId: number): void {
   const existing = tdb.getFavorite(userId, itemId);
   if (existing) return; // Idempotent
 
-  tdb.db.prepare(
-    "INSERT INTO favorites (user_id, item_id) VALUES (?, ?)"
-  ).run(userId, itemId);
+  tdb.db
+    .prepare("INSERT INTO favorites (user_id, item_id) VALUES (?, ?)")
+    .run(userId, itemId);
 }
 
 function removeFavorite(userId: number, itemId: number): void {
-  const result = tdb.db.prepare(
-    "DELETE FROM favorites WHERE user_id = ? AND item_id = ?"
-  ).run(userId, itemId);
+  const result = tdb.db
+    .prepare("DELETE FROM favorites WHERE user_id = ? AND item_id = ?")
+    .run(userId, itemId);
   if (result.changes === 0) throw new Error("Favorite not found");
 }
 
 function listFavorites(userId: number): any[] {
-  return tdb.db.prepare(
-    `SELECT i.*, f.created_at as favorited_at
+  return tdb.db
+    .prepare(
+      `SELECT i.*, f.created_at as favorited_at
      FROM favorites f
      JOIN items i ON f.item_id = i.id
      WHERE f.user_id = ?
-     ORDER BY f.created_at DESC`
-  ).all(userId);
+     ORDER BY f.created_at DESC`,
+    )
+    .all(userId);
 }
 
 function isFavorite(userId: number, itemId: number): boolean {

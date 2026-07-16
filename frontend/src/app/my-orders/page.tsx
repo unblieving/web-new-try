@@ -217,9 +217,7 @@ export default function MyOrdersPage() {
         </div>
       ) : orders.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-2xl border border-blue-100/60">
-          <div className="text-5xl mb-3">
-            {tab === "buy" ? "🛒" : "📦"}
-          </div>
+          <div className="text-5xl mb-3">{tab === "buy" ? "🛒" : "📦"}</div>
           <p className="text-gray-400 text-sm mb-4">
             {statusFilter
               ? "该状态下暂无订单"

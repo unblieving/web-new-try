@@ -20,8 +20,22 @@ export interface TestDb {
   // Helper methods for creating test data
   createUser: (username: string, password?: string, role?: string) => number;
   createCategory: (name: string) => number;
-  createItem: (sellerId: number, categoryId: number, title?: string, price?: number, stock?: number, status?: string) => number;
-  createOrder: (buyerId: number, itemId: number, snapshotTitle?: string, snapshotPrice?: number, quantity?: number, status?: string) => number;
+  createItem: (
+    sellerId: number,
+    categoryId: number,
+    title?: string,
+    price?: number,
+    stock?: number,
+    status?: string,
+  ) => number;
+  createOrder: (
+    buyerId: number,
+    itemId: number,
+    snapshotTitle?: string,
+    snapshotPrice?: number,
+    quantity?: number,
+    status?: string,
+  ) => number;
   // Helper methods for queries
   getUserById: (id: number) => any;
   getItemById: (id: number) => any;
@@ -95,8 +109,17 @@ export function createTestDb(): TestDb {
     `);
 
     // Seed default categories
-    const insertCat = db.prepare("INSERT OR IGNORE INTO categories (name) VALUES (?)");
-    for (const name of ["Books", "Electronics", "Daily Necessities", "Clothing", "Sports", "Other"]) {
+    const insertCat = db.prepare(
+      "INSERT OR IGNORE INTO categories (name) VALUES (?)",
+    );
+    for (const name of [
+      "Books",
+      "Electronics",
+      "Daily Necessities",
+      "Clothing",
+      "Sports",
+      "Other",
+    ]) {
       insertCat.run(name);
     }
   }
@@ -114,20 +137,28 @@ export function createTestDb(): TestDb {
 
   function hashPassword(password: string): string {
     const salt = randomBytes(16).toString("hex");
-    const hash = createHash("sha256").update(salt + password).digest("hex");
+    const hash = createHash("sha256")
+      .update(salt + password)
+      .digest("hex");
     return `${salt}:${hash}`;
   }
 
-  function createUser(username: string, password = "Test1234", role = "user"): number {
+  function createUser(
+    username: string,
+    password = "Test1234",
+    role = "user",
+  ): number {
     const passwordHash = hashPassword(password);
-    const result = db.prepare(
-      "INSERT INTO users (username, password, role) VALUES (?, ?, ?)"
-    ).run(username, passwordHash, role);
+    const result = db
+      .prepare("INSERT INTO users (username, password, role) VALUES (?, ?, ?)")
+      .run(username, passwordHash, role);
     return Number(result.lastInsertRowid);
   }
 
   function createCategory(name: string): number {
-    const result = db.prepare("INSERT INTO categories (name) VALUES (?)").run(name);
+    const result = db
+      .prepare("INSERT INTO categories (name) VALUES (?)")
+      .run(name);
     return Number(result.lastInsertRowid);
   }
 
@@ -137,11 +168,21 @@ export function createTestDb(): TestDb {
     title = "Test Item",
     price = 10.0,
     stock = 1,
-    status = "approved"
+    status = "approved",
   ): number {
-    const result = db.prepare(
-      "INSERT INTO items (seller_id, category_id, title, description, price, stock, status) VALUES (?, ?, ?, ?, ?, ?, ?)"
-    ).run(sellerId, categoryId, title, "Test description", price, stock, status);
+    const result = db
+      .prepare(
+        "INSERT INTO items (seller_id, category_id, title, description, price, stock, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      )
+      .run(
+        sellerId,
+        categoryId,
+        title,
+        "Test description",
+        price,
+        stock,
+        status,
+      );
     return Number(result.lastInsertRowid);
   }
 
@@ -151,12 +192,22 @@ export function createTestDb(): TestDb {
     snapshotTitle = "Test Item",
     snapshotPrice = 10.0,
     quantity = 1,
-    status = "pending_payment"
+    status = "pending_payment",
   ): number {
     const totalAmount = snapshotPrice * quantity;
-    const result = db.prepare(
-      "INSERT INTO orders (buyer_id, item_id, snapshot_title, snapshot_price, quantity, total_amount, status) VALUES (?, ?, ?, ?, ?, ?, ?)"
-    ).run(buyerId, itemId, snapshotTitle, snapshotPrice, quantity, totalAmount, status);
+    const result = db
+      .prepare(
+        "INSERT INTO orders (buyer_id, item_id, snapshot_title, snapshot_price, quantity, total_amount, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      )
+      .run(
+        buyerId,
+        itemId,
+        snapshotTitle,
+        snapshotPrice,
+        quantity,
+        totalAmount,
+        status,
+      );
     return Number(result.lastInsertRowid);
   }
 
@@ -173,17 +224,23 @@ export function createTestDb(): TestDb {
   }
 
   function getFavorite(userId: number, itemId: number) {
-    return db.prepare("SELECT * FROM favorites WHERE user_id = ? AND item_id = ?").get(userId, itemId);
+    return db
+      .prepare("SELECT * FROM favorites WHERE user_id = ? AND item_id = ?")
+      .get(userId, itemId);
   }
 
   function countOrders(itemId: number, status?: string): number {
     if (status) {
-      const row = db.prepare(
-        "SELECT COUNT(*) as cnt FROM orders WHERE item_id = ? AND status = ?"
-      ).get(itemId, status) as any;
+      const row = db
+        .prepare(
+          "SELECT COUNT(*) as cnt FROM orders WHERE item_id = ? AND status = ?",
+        )
+        .get(itemId, status) as any;
       return row?.cnt ?? 0;
     }
-    const row = db.prepare("SELECT COUNT(*) as cnt FROM orders WHERE item_id = ?").get(itemId) as any;
+    const row = db
+      .prepare("SELECT COUNT(*) as cnt FROM orders WHERE item_id = ?")
+      .get(itemId) as any;
     return row?.cnt ?? 0;
   }
 

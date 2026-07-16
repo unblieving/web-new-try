@@ -22,17 +22,24 @@ afterEach(() => {
 
 function hashPassword(password: string): string {
   const salt = randomBytes(16).toString("hex");
-  const hash = createHash("sha256").update(salt + password).digest("hex");
+  const hash = createHash("sha256")
+    .update(salt + password)
+    .digest("hex");
   return `${salt}:${hash}`;
 }
 
 function verifyPassword(password: string, stored: string): boolean {
   const [salt, hash] = stored.split(":");
-  const computed = createHash("sha256").update(salt + password).digest("hex");
+  const computed = createHash("sha256")
+    .update(salt + password)
+    .digest("hex");
   return hash === computed;
 }
 
-function registerUser(username: string, password: string): { id: number; token: string } {
+function registerUser(
+  username: string,
+  password: string,
+): { id: number; token: string } {
   // Validate
   if (!username || typeof username !== "string" || username.trim().length < 3) {
     throw new Error("Username must be at least 3 characters");
@@ -42,23 +49,32 @@ function registerUser(username: string, password: string): { id: number; token: 
   }
 
   // Check duplicate
-  const existing = tdb.db.prepare("SELECT id FROM users WHERE username = ?").get(username.trim());
+  const existing = tdb.db
+    .prepare("SELECT id FROM users WHERE username = ?")
+    .get(username.trim());
   if (existing) {
     throw new Error("Username already exists");
   }
 
   const passwordHash = hashPassword(password);
-  const result = tdb.db.prepare(
-    "INSERT INTO users (username, password, role) VALUES (?, ?, 'user')"
-  ).run(username.trim(), passwordHash);
+  const result = tdb.db
+    .prepare(
+      "INSERT INTO users (username, password, role) VALUES (?, ?, 'user')",
+    )
+    .run(username.trim(), passwordHash);
 
   const id = Number(result.lastInsertRowid);
   const token = randomBytes(32).toString("hex");
   return { id, token };
 }
 
-function loginUser(username: string, password: string): { id: number; token: string; role: string } {
-  const user = tdb.db.prepare("SELECT * FROM users WHERE username = ?").get(username) as any;
+function loginUser(
+  username: string,
+  password: string,
+): { id: number; token: string; role: string } {
+  const user = tdb.db
+    .prepare("SELECT * FROM users WHERE username = ?")
+    .get(username) as any;
   if (!user) {
     throw new Error("Invalid username or password");
   }

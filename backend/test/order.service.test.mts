@@ -19,20 +19,31 @@ afterEach(() => {
 
 // --- Helper functions replicating order service logic ---
 
-function createOrder(buyerId: number, itemId: number, quantity: number = 1): number {
+function createOrder(
+  buyerId: number,
+  itemId: number,
+  quantity: number = 1,
+): number {
   const item = tdb.getItemById(itemId) as any;
   if (!item) throw new Error("Item not found");
-  if (item.status !== "approved") throw new Error("Item is not available for purchase");
+  if (item.status !== "approved")
+    throw new Error("Item is not available for purchase");
   if (item.stock < quantity) throw new Error("Insufficient stock");
   if (item.seller_id === buyerId) throw new Error("Cannot buy your own item");
 
   // Decrement stock
-  tdb.db.prepare("UPDATE items SET stock = stock - ?, updated_at = datetime('now') WHERE id = ?").run(quantity, itemId);
+  tdb.db
+    .prepare(
+      "UPDATE items SET stock = stock - ?, updated_at = datetime('now') WHERE id = ?",
+    )
+    .run(quantity, itemId);
 
   const totalAmount = item.price * quantity;
-  const result = tdb.db.prepare(
-    "INSERT INTO orders (buyer_id, item_id, snapshot_title, snapshot_price, quantity, total_amount, status) VALUES (?, ?, ?, ?, ?, ?, 'pending_payment')"
-  ).run(buyerId, itemId, item.title, item.price, quantity, totalAmount);
+  const result = tdb.db
+    .prepare(
+      "INSERT INTO orders (buyer_id, item_id, snapshot_title, snapshot_price, quantity, total_amount, status) VALUES (?, ?, ?, ?, ?, ?, 'pending_payment')",
+    )
+    .run(buyerId, itemId, item.title, item.price, quantity, totalAmount);
 
   return Number(result.lastInsertRowid);
 }
@@ -40,50 +51,65 @@ function createOrder(buyerId: number, itemId: number, quantity: number = 1): num
 function simulatePayment(orderId: number): void {
   const order = tdb.getOrderById(orderId) as any;
   if (!order) throw new Error("Order not found");
-  if (order.status !== "pending_payment") throw new Error("Order is not awaiting payment");
+  if (order.status !== "pending_payment")
+    throw new Error("Order is not awaiting payment");
 
-  tdb.db.prepare(
-    "UPDATE orders SET status = 'paid', updated_at = datetime('now') WHERE id = ?"
-  ).run(orderId);
+  tdb.db
+    .prepare(
+      "UPDATE orders SET status = 'paid', updated_at = datetime('now') WHERE id = ?",
+    )
+    .run(orderId);
 }
 
 function sellerConfirm(orderId: number, sellerId: number): void {
   const order = tdb.getOrderById(orderId) as any;
   if (!order) throw new Error("Order not found");
-  if (order.status !== "paid") throw new Error("Order must be paid before shipping");
+  if (order.status !== "paid")
+    throw new Error("Order must be paid before shipping");
 
   const item = tdb.getItemById(order.item_id) as any;
   if (item.seller_id !== sellerId) throw new Error("Forbidden: not the seller");
 
-  tdb.db.prepare(
-    "UPDATE orders SET status = 'shipped', updated_at = datetime('now') WHERE id = ?"
-  ).run(orderId);
+  tdb.db
+    .prepare(
+      "UPDATE orders SET status = 'shipped', updated_at = datetime('now') WHERE id = ?",
+    )
+    .run(orderId);
 }
 
 function confirmReceipt(orderId: number, buyerId: number): void {
   const order = tdb.getOrderById(orderId) as any;
   if (!order) throw new Error("Order not found");
-  if (order.status !== "shipped") throw new Error("Order must be shipped before confirming receipt");
+  if (order.status !== "shipped")
+    throw new Error("Order must be shipped before confirming receipt");
   if (order.buyer_id !== buyerId) throw new Error("Forbidden: not the buyer");
 
-  tdb.db.prepare(
-    "UPDATE orders SET status = 'completed', updated_at = datetime('now') WHERE id = ?"
-  ).run(orderId);
+  tdb.db
+    .prepare(
+      "UPDATE orders SET status = 'completed', updated_at = datetime('now') WHERE id = ?",
+    )
+    .run(orderId);
 }
 
 function cancelOrder(orderId: number, userId: number): void {
   const order = tdb.getOrderById(orderId) as any;
   if (!order) throw new Error("Order not found");
-  if (order.status !== "pending_payment") throw new Error("Only unpaid orders can be cancelled");
+  if (order.status !== "pending_payment")
+    throw new Error("Only unpaid orders can be cancelled");
   if (order.buyer_id !== userId) throw new Error("Forbidden: not the buyer");
 
   // Restore stock
-  tdb.db.prepare("UPDATE items SET stock = stock + ?, updated_at = datetime('now') WHERE id = ?")
+  tdb.db
+    .prepare(
+      "UPDATE items SET stock = stock + ?, updated_at = datetime('now') WHERE id = ?",
+    )
     .run(order.quantity, order.item_id);
 
-  tdb.db.prepare(
-    "UPDATE orders SET status = 'cancelled', updated_at = datetime('now') WHERE id = ?"
-  ).run(orderId);
+  tdb.db
+    .prepare(
+      "UPDATE orders SET status = 'cancelled', updated_at = datetime('now') WHERE id = ?",
+    )
+    .run(orderId);
 }
 
 // --- Tests ---
@@ -92,7 +118,14 @@ test("createOrder creates a pending_payment order", () => {
   const sellerId = tdb.createUser("seller1");
   const buyerId = tdb.createUser("buyer1");
   const catId = tdb.createCategory("Cat1");
-  const itemId = tdb.createItem(sellerId, catId, "Test Item", 25.0, 5, "approved");
+  const itemId = tdb.createItem(
+    sellerId,
+    catId,
+    "Test Item",
+    25.0,
+    5,
+    "approved",
+  );
 
   const orderId = createOrder(buyerId, itemId, 2);
   const order = tdb.getOrderById(orderId) as any;
@@ -111,7 +144,14 @@ test("createOrder rejects non-approved item", () => {
   const sellerId = tdb.createUser("seller2");
   const buyerId = tdb.createUser("buyer2");
   const catId = tdb.createCategory("Cat2");
-  const itemId = tdb.createItem(sellerId, catId, "Pending Item", 10, 1, "pending");
+  const itemId = tdb.createItem(
+    sellerId,
+    catId,
+    "Pending Item",
+    10,
+    1,
+    "pending",
+  );
 
   assert.throws(() => createOrder(buyerId, itemId), /not available/);
 });
@@ -120,7 +160,14 @@ test("createOrder rejects insufficient stock", () => {
   const sellerId = tdb.createUser("seller3");
   const buyerId = tdb.createUser("buyer3");
   const catId = tdb.createCategory("Cat3");
-  const itemId = tdb.createItem(sellerId, catId, "Rare Item", 100, 1, "approved");
+  const itemId = tdb.createItem(
+    sellerId,
+    catId,
+    "Rare Item",
+    100,
+    1,
+    "approved",
+  );
 
   assert.throws(() => createOrder(buyerId, itemId, 5), /Insufficient stock/);
 });
@@ -241,7 +288,14 @@ test("full order lifecycle: create → pay → ship → complete", () => {
   const sellerId = tdb.createUser("seller13");
   const buyerId = tdb.createUser("buyer13");
   const catId = tdb.createCategory("Cat13");
-  const itemId = tdb.createItem(sellerId, catId, "Lifecycle Item", 50, 2, "approved");
+  const itemId = tdb.createItem(
+    sellerId,
+    catId,
+    "Lifecycle Item",
+    50,
+    2,
+    "approved",
+  );
 
   const orderId = createOrder(buyerId, itemId, 1);
   assert.equal((tdb.getOrderById(orderId) as any).status, "pending_payment");

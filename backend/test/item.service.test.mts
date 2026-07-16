@@ -25,22 +25,32 @@ function publishItem(
   title: string,
   description: string | null,
   price: number,
-  stock: number
+  stock: number,
 ): number {
   if (!title || title.trim().length === 0) throw new Error("Title is required");
-  if (typeof price !== "number" || price <= 0) throw new Error("Price must be positive");
-  if (!Number.isInteger(stock) || stock < 0) throw new Error("Stock must be a non-negative integer");
+  if (typeof price !== "number" || price <= 0)
+    throw new Error("Price must be positive");
+  if (!Number.isInteger(stock) || stock < 0)
+    throw new Error("Stock must be a non-negative integer");
 
-  const result = tdb.db.prepare(
-    "INSERT INTO items (seller_id, category_id, title, description, price, stock, status) VALUES (?, ?, ?, ?, ?, ?, 'pending')"
-  ).run(sellerId, categoryId, title.trim(), description, price, stock);
+  const result = tdb.db
+    .prepare(
+      "INSERT INTO items (seller_id, category_id, title, description, price, stock, status) VALUES (?, ?, ?, ?, ?, ?, 'pending')",
+    )
+    .run(sellerId, categoryId, title.trim(), description, price, stock);
   return Number(result.lastInsertRowid);
 }
 
 function updateItem(
   itemId: number,
   sellerId: number,
-  updates: { title?: string; description?: string | null; price?: number; stock?: number; categoryId?: number }
+  updates: {
+    title?: string;
+    description?: string | null;
+    price?: number;
+    stock?: number;
+    categoryId?: number;
+  },
 ): void {
   const item = tdb.getItemById(itemId) as any;
   if (!item) throw new Error("Item not found");
@@ -50,27 +60,34 @@ function updateItem(
   }
 
   const title = updates.title ?? item.title;
-  const description = updates.description !== undefined ? updates.description : item.description;
+  const description =
+    updates.description !== undefined ? updates.description : item.description;
   const price = updates.price ?? item.price;
   const stock = updates.stock ?? item.stock;
   const categoryId = updates.categoryId ?? item.category_id;
 
-  if (price !== undefined && price <= 0) throw new Error("Price must be positive");
+  if (price !== undefined && price <= 0)
+    throw new Error("Price must be positive");
 
-  tdb.db.prepare(
-    "UPDATE items SET title = ?, description = ?, price = ?, stock = ?, category_id = ?, updated_at = datetime('now') WHERE id = ?"
-  ).run(title, description, price, stock, categoryId, itemId);
+  tdb.db
+    .prepare(
+      "UPDATE items SET title = ?, description = ?, price = ?, stock = ?, category_id = ?, updated_at = datetime('now') WHERE id = ?",
+    )
+    .run(title, description, price, stock, categoryId, itemId);
 }
 
 function reviewItem(itemId: number, action: "approve" | "reject"): void {
   const item = tdb.getItemById(itemId) as any;
   if (!item) throw new Error("Item not found");
-  if (item.status !== "pending") throw new Error("Only pending items can be reviewed");
+  if (item.status !== "pending")
+    throw new Error("Only pending items can be reviewed");
 
   const newStatus = action === "approve" ? "approved" : "rejected";
-  tdb.db.prepare(
-    "UPDATE items SET status = ?, updated_at = datetime('now') WHERE id = ?"
-  ).run(newStatus, itemId);
+  tdb.db
+    .prepare(
+      "UPDATE items SET status = ?, updated_at = datetime('now') WHERE id = ?",
+    )
+    .run(newStatus, itemId);
 }
 
 function removeItem(itemId: number, sellerId: number): void {
@@ -79,9 +96,11 @@ function removeItem(itemId: number, sellerId: number): void {
   if (item.seller_id !== sellerId) throw new Error("Forbidden");
   if (item.status === "removed") throw new Error("Item already removed");
 
-  tdb.db.prepare(
-    "UPDATE items SET status = 'removed', updated_at = datetime('now') WHERE id = ?"
-  ).run(itemId);
+  tdb.db
+    .prepare(
+      "UPDATE items SET status = 'removed', updated_at = datetime('now') WHERE id = ?",
+    )
+    .run(itemId);
 }
 
 function listItems(filters: {
@@ -109,21 +128,28 @@ function listItems(filters: {
     conditions.push("i.status = 'approved'");
   }
 
-  const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+  const where =
+    conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
   const page = filters.page ?? 1;
   const pageSize = filters.pageSize ?? 20;
   const offset = (page - 1) * pageSize;
 
-  const total = (tdb.db.prepare(`SELECT COUNT(*) as cnt FROM items i ${where}`).get(...params) as any).cnt;
-  const items = tdb.db.prepare(
-    `SELECT i.*, u.username as seller_name, c.name as category_name
+  const total = (
+    tdb.db
+      .prepare(`SELECT COUNT(*) as cnt FROM items i ${where}`)
+      .get(...params) as any
+  ).cnt;
+  const items = tdb.db
+    .prepare(
+      `SELECT i.*, u.username as seller_name, c.name as category_name
      FROM items i
      JOIN users u ON i.seller_id = u.id
      JOIN categories c ON i.category_id = c.id
      ${where}
      ORDER BY i.created_at DESC
-     LIMIT ? OFFSET ?`
-  ).all(...params, pageSize, offset);
+     LIMIT ? OFFSET ?`,
+    )
+    .all(...params, pageSize, offset);
 
   return { items, total };
 }
@@ -133,7 +159,14 @@ function listItems(filters: {
 test("publishItem creates a pending item", () => {
   const sellerId = tdb.createUser("seller1");
   const catId = tdb.createCategory("TestCat");
-  const itemId = publishItem(sellerId, catId, "My Book", "A nice book", 15.5, 3);
+  const itemId = publishItem(
+    sellerId,
+    catId,
+    "My Book",
+    "A nice book",
+    15.5,
+    3,
+  );
 
   const item = tdb.getItemById(itemId) as any;
   assert.equal(item.status, "pending");
@@ -145,13 +178,19 @@ test("publishItem creates a pending item", () => {
 test("publishItem rejects empty title", () => {
   const sellerId = tdb.createUser("seller2");
   const catId = tdb.createCategory("Cat2");
-  assert.throws(() => publishItem(sellerId, catId, "", null, 10, 1), /Title is required/);
+  assert.throws(
+    () => publishItem(sellerId, catId, "", null, 10, 1),
+    /Title is required/,
+  );
 });
 
 test("publishItem rejects negative price", () => {
   const sellerId = tdb.createUser("seller3");
   const catId = tdb.createCategory("Cat3");
-  assert.throws(() => publishItem(sellerId, catId, "Item", null, -5, 1), /Price must be positive/);
+  assert.throws(
+    () => publishItem(sellerId, catId, "Item", null, -5, 1),
+    /Price must be positive/,
+  );
 });
 
 test("updateItem updates fields correctly", () => {
@@ -174,7 +213,10 @@ test("updateItem rejects non-owner", () => {
   const catId = tdb.createCategory("Cat5");
   const itemId = publishItem(sellerId, catId, "Item", null, 10, 1);
 
-  assert.throws(() => updateItem(itemId, otherId, { title: "Hacked" }), /Forbidden/);
+  assert.throws(
+    () => updateItem(itemId, otherId, { title: "Hacked" }),
+    /Forbidden/,
+  );
 });
 
 test("reviewItem approves a pending item", () => {

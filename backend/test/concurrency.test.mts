@@ -22,13 +22,19 @@ afterEach(() => {
 
 // --- Helper: atomic purchase using BEGIN IMMEDIATE (same as order.service.ts) ---
 
-function atomicPurchase(buyerId: number, itemId: number, quantity: number = 1): number {
+function atomicPurchase(
+  buyerId: number,
+  itemId: number,
+  quantity: number = 1,
+): number {
   const db = tdb.db;
 
   // Use BEGIN IMMEDIATE to acquire a write lock upfront
   db.prepare("BEGIN IMMEDIATE").run();
   try {
-    const item = db.prepare("SELECT * FROM items WHERE id = ?").get(itemId) as any;
+    const item = db
+      .prepare("SELECT * FROM items WHERE id = ?")
+      .get(itemId) as any;
     if (!item) {
       db.prepare("ROLLBACK").run();
       throw new Error("Item not found");
@@ -47,18 +53,25 @@ function atomicPurchase(buyerId: number, itemId: number, quantity: number = 1): 
     }
 
     // Decrement stock
-    db.prepare("UPDATE items SET stock = stock - ?, updated_at = datetime('now') WHERE id = ?")
-      .run(quantity, itemId);
+    db.prepare(
+      "UPDATE items SET stock = stock - ?, updated_at = datetime('now') WHERE id = ?",
+    ).run(quantity, itemId);
 
     const totalAmount = item.price * quantity;
-    const result = db.prepare(
-      "INSERT INTO orders (buyer_id, item_id, snapshot_title, snapshot_price, quantity, total_amount, status) VALUES (?, ?, ?, ?, ?, ?, 'pending_payment')"
-    ).run(buyerId, itemId, item.title, item.price, quantity, totalAmount);
+    const result = db
+      .prepare(
+        "INSERT INTO orders (buyer_id, item_id, snapshot_title, snapshot_price, quantity, total_amount, status) VALUES (?, ?, ?, ?, ?, ?, 'pending_payment')",
+      )
+      .run(buyerId, itemId, item.title, item.price, quantity, totalAmount);
 
     db.prepare("COMMIT").run();
     return Number(result.lastInsertRowid);
   } catch (err) {
-    try { db.prepare("ROLLBACK").run(); } catch { /* already rolled back */ }
+    try {
+      db.prepare("ROLLBACK").run();
+    } catch {
+      /* already rolled back */
+    }
     throw err;
   }
 }
@@ -68,7 +81,9 @@ function cancelOrderWithRestore(orderId: number, buyerId: number): void {
 
   db.prepare("BEGIN IMMEDIATE").run();
   try {
-    const order = db.prepare("SELECT * FROM orders WHERE id = ?").get(orderId) as any;
+    const order = db
+      .prepare("SELECT * FROM orders WHERE id = ?")
+      .get(orderId) as any;
     if (!order) {
       db.prepare("ROLLBACK").run();
       throw new Error("Order not found");
@@ -83,15 +98,21 @@ function cancelOrderWithRestore(orderId: number, buyerId: number): void {
     }
 
     // Restore stock
-    db.prepare("UPDATE items SET stock = stock + ?, updated_at = datetime('now') WHERE id = ?")
-      .run(order.quantity, order.item_id);
+    db.prepare(
+      "UPDATE items SET stock = stock + ?, updated_at = datetime('now') WHERE id = ?",
+    ).run(order.quantity, order.item_id);
 
-    db.prepare("UPDATE orders SET status = 'cancelled', updated_at = datetime('now') WHERE id = ?")
-      .run(orderId);
+    db.prepare(
+      "UPDATE orders SET status = 'cancelled', updated_at = datetime('now') WHERE id = ?",
+    ).run(orderId);
 
     db.prepare("COMMIT").run();
   } catch (err) {
-    try { db.prepare("ROLLBACK").run(); } catch { /* already rolled back */ }
+    try {
+      db.prepare("ROLLBACK").run();
+    } catch {
+      /* already rolled back */
+    }
     throw err;
   }
 }
@@ -101,7 +122,14 @@ function cancelOrderWithRestore(orderId: number, buyerId: number): void {
 test("only one buyer succeeds when purchasing the last item", async () => {
   const sellerId = tdb.createUser("seller1");
   const catId = tdb.createCategory("限量商品");
-  const itemId = tdb.createItem(sellerId, catId, "限量版手办", 500, 1, "approved");
+  const itemId = tdb.createItem(
+    sellerId,
+    catId,
+    "限量版手办",
+    500,
+    1,
+    "approved",
+  );
 
   // Create 5 buyers
   const buyerIds: number[] = [];
@@ -112,7 +140,9 @@ test("only one buyer succeeds when purchasing the last item", async () => {
   // Fire all purchase attempts concurrently
   // Wrap in Promise.resolve().then() so synchronous throws become rejections
   const results = await Promise.allSettled(
-    buyerIds.map((buyerId) => Promise.resolve().then(() => atomicPurchase(buyerId, itemId, 1)))
+    buyerIds.map((buyerId) =>
+      Promise.resolve().then(() => atomicPurchase(buyerId, itemId, 1)),
+    ),
   );
 
   const fulfilled = results.filter((r) => r.status === "fulfilled");
@@ -126,14 +156,23 @@ test("only one buyer succeeds when purchasing the last item", async () => {
   assert.equal(item.stock, 0);
 
   // Verify exactly one order was created
-  const allOrders = tdb.db.prepare("SELECT * FROM orders WHERE item_id = ?").all(itemId);
+  const allOrders = tdb.db
+    .prepare("SELECT * FROM orders WHERE item_id = ?")
+    .all(itemId);
   assert.equal(allOrders.length, 1, "Exactly one order should exist");
 });
 
 test("handles concurrent purchases of multi-quantity item correctly", async () => {
   const sellerId = tdb.createUser("seller2");
   const catId = tdb.createCategory("教材");
-  const itemId = tdb.createItem(sellerId, catId, "二手教材套装", 80, 3, "approved");
+  const itemId = tdb.createItem(
+    sellerId,
+    catId,
+    "二手教材套装",
+    80,
+    3,
+    "approved",
+  );
 
   // Create 5 buyers, each trying to buy 1
   const buyerIds: number[] = [];
@@ -142,7 +181,9 @@ test("handles concurrent purchases of multi-quantity item correctly", async () =
   }
 
   const results = await Promise.allSettled(
-    buyerIds.map((buyerId) => Promise.resolve().then(() => atomicPurchase(buyerId, itemId, 1)))
+    buyerIds.map((buyerId) =>
+      Promise.resolve().then(() => atomicPurchase(buyerId, itemId, 1)),
+    ),
   );
 
   const fulfilled = results.filter((r) => r.status === "fulfilled");
@@ -159,7 +200,14 @@ test("handles concurrent purchases of multi-quantity item correctly", async () =
 test("concurrent purchase + cancel does not lose stock", async () => {
   const sellerId = tdb.createUser("seller3");
   const catId = tdb.createCategory("电子产品");
-  const itemId = tdb.createItem(sellerId, catId, "二手Switch", 1200, 1, "approved");
+  const itemId = tdb.createItem(
+    sellerId,
+    catId,
+    "二手Switch",
+    1200,
+    1,
+    "approved",
+  );
 
   const buyer1 = tdb.createUser("buyer_c1");
   const buyer2 = tdb.createUser("buyer_c2");
@@ -168,44 +216,64 @@ test("concurrent purchase + cancel does not lose stock", async () => {
   const orderId = atomicPurchase(buyer1, itemId, 1);
 
   // Cancel and immediately try to buy again
-  const cancelPromise = Promise.resolve(cancelOrderWithRestore(orderId, buyer1));
-  const buyPromise = new Promise<{ success: boolean; error?: string }>((resolve) => {
-    try {
-      atomicPurchase(buyer2, itemId, 1);
-      resolve({ success: true });
-    } catch (err: any) {
-      resolve({ success: false, error: err.message });
-    }
-  });
+  const cancelPromise = Promise.resolve(
+    cancelOrderWithRestore(orderId, buyer1),
+  );
+  const buyPromise = new Promise<{ success: boolean; error?: string }>(
+    (resolve) => {
+      try {
+        atomicPurchase(buyer2, itemId, 1);
+        resolve({ success: true });
+      } catch (err: any) {
+        resolve({ success: false, error: err.message });
+      }
+    },
+  );
 
-  const [cancelResult, buyResult] = await Promise.all([cancelPromise, buyPromise]);
+  const [cancelResult, buyResult] = await Promise.all([
+    cancelPromise,
+    buyPromise,
+  ]);
 
   // After cancel, stock should be restored
   const item = tdb.getItemById(itemId) as any;
 
   // Count active (non-cancelled) orders
-  const activeOrders = tdb.db.prepare(
-    "SELECT COUNT(*) as cnt FROM orders WHERE item_id = ? AND status != 'cancelled'"
-  ).get(itemId) as any;
+  const activeOrders = tdb.db
+    .prepare(
+      "SELECT COUNT(*) as cnt FROM orders WHERE item_id = ? AND status != 'cancelled'",
+    )
+    .get(itemId) as any;
 
   // Stock + active orders should equal original quantity
   assert.equal(
     item.stock + activeOrders.cnt,
     1,
-    "Stock consistency: available + active orders = original quantity"
+    "Stock consistency: available + active orders = original quantity",
   );
 });
 
 test("atomic purchase is serialised under concurrent access", async () => {
   const sellerId = tdb.createUser("seller4");
   const catId = tdb.createCategory("球鞋");
-  const itemId = tdb.createItem(sellerId, catId, "限量球鞋", 300, 2, "approved");
+  const itemId = tdb.createItem(
+    sellerId,
+    catId,
+    "限量球鞋",
+    300,
+    2,
+    "approved",
+  );
 
   // 5 concurrent purchase attempts of 1 each
-  const buyerIds = Array.from({ length: 5 }, (_, i) => tdb.createUser(`buyer_r${i}`));
+  const buyerIds = Array.from({ length: 5 }, (_, i) =>
+    tdb.createUser(`buyer_r${i}`),
+  );
 
   const results = await Promise.allSettled(
-    buyerIds.map((bid) => Promise.resolve().then(() => atomicPurchase(bid, itemId, 1)))
+    buyerIds.map((bid) =>
+      Promise.resolve().then(() => atomicPurchase(bid, itemId, 1)),
+    ),
   );
 
   const successes = results.filter((r) => r.status === "fulfilled");
