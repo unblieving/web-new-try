@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   cancelOrder,
   confirmOrder,
+  createReview,
   getMyOrders,
   getSoldOrders,
   payOrder,
@@ -51,6 +52,10 @@ export default function MyOrdersPage() {
   const [actionMsgType, setActionMsgType] = useState<"success" | "error">(
     "success",
   );
+  const [reviewingOrderId, setReviewingOrderId] = useState<number | null>(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewContent, setReviewContent] = useState("");
+  const [reviewLoading, setReviewLoading] = useState(false);
 
   const loadOrders = useCallback(async () => {
     setLoading(true);
@@ -121,6 +126,32 @@ export default function MyOrdersPage() {
     } catch (err) {
       setActionMsg(err instanceof Error ? err.message : "操作失败");
       setActionMsgType("error");
+    }
+  }
+
+  async function handleReview(orderId: number) {
+    if (!reviewContent.trim()) {
+      setActionMsg("请填写评价内容");
+      setActionMsgType("error");
+      return;
+    }
+    setReviewLoading(true);
+    setActionMsg("");
+    try {
+      await createReview(orderId, {
+        rating: reviewRating,
+        content: reviewContent.trim(),
+      });
+      setActionMsg("评价成功，感谢你的反馈！");
+      setActionMsgType("success");
+      setReviewingOrderId(null);
+      setReviewContent("");
+      setReviewRating(5);
+    } catch (err) {
+      setActionMsg(err instanceof Error ? err.message : "评价失败");
+      setActionMsgType("error");
+    } finally {
+      setReviewLoading(false);
     }
   }
 
@@ -322,6 +353,20 @@ export default function MyOrdersPage() {
                           </button>
                         </>
                       )}
+                      {order.status === "completed" && (
+                        <button
+                          onClick={() => {
+                            setReviewingOrderId(
+                              reviewingOrderId === order.id ? null : order.id,
+                            );
+                            setReviewContent("");
+                            setReviewRating(5);
+                          }}
+                          className="px-4 py-2 bg-gradient-to-r from-yellow-400 to-orange-400 text-white rounded-xl text-xs font-medium hover:from-yellow-500 hover:to-orange-500 shadow-sm transition-all"
+                        >
+                          ⭐ {reviewingOrderId === order.id ? "收起评价" : "写评价"}
+                        </button>
+                      )}
                     </>
                   )}
                   {tab === "sell" && (
@@ -354,6 +399,60 @@ export default function MyOrdersPage() {
                   )}
                 </div>
               </div>
+
+              {/* Review Form */}
+              {tab === "buy" &&
+                order.status === "completed" &&
+                reviewingOrderId === order.id && (
+                  <div className="mt-4 pt-4 border-t border-blue-50">
+                    <div className="bg-yellow-50/50 rounded-xl p-4 border border-yellow-100">
+                      <p className="text-sm font-medium text-gray-700 mb-3">
+                        ⭐ 为这次交易写评价
+                      </p>
+                      {/* Rating */}
+                      <div className="flex items-center gap-1 mb-3">
+                        <span className="text-sm text-gray-500 mr-2">评分:</span>
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            onClick={() => setReviewRating(star)}
+                            className={`text-2xl transition-transform hover:scale-110 ${
+                              star <= reviewRating
+                                ? "text-yellow-400"
+                                : "text-gray-200"
+                            }`}
+                          >
+                            ★
+                          </button>
+                        ))}
+                        <span className="text-sm text-gray-400 ml-2">
+                          {reviewRating}/5
+                        </span>
+                      </div>
+                      {/* Content */}
+                      <textarea
+                        value={reviewContent}
+                        onChange={(e) => setReviewContent(e.target.value)}
+                        placeholder="分享你的使用体验..."
+                        rows={3}
+                        maxLength={500}
+                        className="w-full border border-gray-200 rounded-lg p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 bg-white"
+                      />
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-xs text-gray-400">
+                          {reviewContent.length}/500
+                        </span>
+                        <button
+                          onClick={() => handleReview(order.id)}
+                          disabled={reviewLoading || !reviewContent.trim()}
+                          className="px-5 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl text-xs font-medium hover:from-blue-600 hover:to-indigo-600 disabled:opacity-50 shadow-sm transition-all"
+                        >
+                          {reviewLoading ? "提交中..." : "提交评价"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
             </div>
           ))}
         </div>

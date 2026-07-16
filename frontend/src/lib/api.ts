@@ -2,11 +2,13 @@ import type {
   AuthResponse,
   Category,
   CreateItemInput,
+  CreateReviewInput,
   Favorite,
   Item,
   ItemListQuery,
   Order,
   PaginatedResult,
+  Review,
   User,
 } from "./types";
 
@@ -226,6 +228,36 @@ export async function checkFavorite(
     `/api/favorites/check/${itemId}`,
   );
   return res.data;
+}
+
+// --- Reviews ---
+export async function getItemReviews(
+  itemId: number,
+  page = 1,
+  pageSize = 20,
+): Promise<PaginatedResult<Review>> {
+  const params = new URLSearchParams();
+  params.set("page", String(page));
+  params.set("pageSize", String(pageSize));
+  const res = await request<PaginatedResult<Review>>(
+    `/api/items/${itemId}/reviews?${params.toString()}`,
+  );
+  return res;
+}
+
+export async function createReview(
+  orderId: number,
+  input: CreateReviewInput,
+): Promise<Review> {
+  const res = await request<{ data: Review }>(`/api/orders/${orderId}/review`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return res.data;
+}
+
+export async function deleteReview(reviewId: number): Promise<void> {
+  await request(`/api/reviews/${reviewId}`, { method: "DELETE" });
 }
 
 // --- Admin ---

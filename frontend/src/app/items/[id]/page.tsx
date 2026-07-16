@@ -7,10 +7,11 @@ import {
   checkFavorite,
   createOrder,
   getItem,
+  getItemReviews,
   removeFavorite,
 } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
-import type { Item } from "@/lib/types";
+import type { Item, Review } from "@/lib/types";
 
 const STATUS_LABELS: Record<string, string> = {
   pending_review: "审核中",
@@ -43,6 +44,10 @@ export default function ItemDetailPage() {
   const [favLoading, setFavLoading] = useState(false);
   const [orderLoading, setOrderLoading] = useState(false);
   const [orderMsg, setOrderMsg] = useState("");
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewsTotal, setReviewsTotal] = useState(0);
+  const [reviewsPage, setReviewsPage] = useState(1);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
 
   const loadItem = useCallback(async () => {
     setLoading(true);
@@ -76,6 +81,28 @@ export default function ItemDetailPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- Check favorite status
     loadFavoriteStatus();
   }, [loadFavoriteStatus]);
+
+  const loadReviews = useCallback(
+    async (page = 1) => {
+      setReviewsLoading(true);
+      try {
+        const result = await getItemReviews(id, page, 10);
+        setReviews(result.data);
+        setReviewsTotal(result.total);
+        setReviewsPage(page);
+      } catch {
+        /* ignore */
+      } finally {
+        setReviewsLoading(false);
+      }
+    },
+    [id],
+  );
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Load reviews
+    loadReviews();
+  }, [loadReviews]);
 
   async function toggleFavorite() {
     if (!user) {
@@ -286,6 +313,69 @@ export default function ItemDetailPage() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Reviews */}
+      <div className="mt-6 bg-white rounded-2xl border border-blue-100/60 shadow-sm p-6">
+        <h2 className="text-lg font-bold text-gray-800 mb-4">
+          ⭐ 用户评价 {reviewsTotal > 0 && <span className="text-sm font-normal text-gray-400">({reviewsTotal}条)</span>}
+        </h2>
+
+        {reviewsLoading ? (
+          <p className="text-sm text-gray-400 py-4 text-center">加载评价中...</p>
+        ) : reviews.length === 0 ? (
+          <p className="text-sm text-gray-400 py-4 text-center">暂无评价，购买后来评价吧~</p>
+        ) : (
+          <div className="space-y-4">
+            {reviews.map((review) => (
+              <div
+                key={review.id}
+                className="border border-gray-100 rounded-xl p-4 bg-gray-50/50"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-gray-700">
+                      {review.buyer?.username ?? "匿名用户"}
+                    </span>
+                    <span className="text-yellow-400 text-sm">
+                      {"★".repeat(review.rating)}
+                      {"☆".repeat(5 - review.rating)}
+                    </span>
+                  </div>
+                  <span className="text-xs text-gray-400">
+                    {new Date(review.createdAt).toLocaleString("zh-CN")}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  {review.content}
+                </p>
+              </div>
+            ))}
+
+            {/* Pagination */}
+            {reviewsTotal > 10 && (
+              <div className="flex items-center justify-center gap-2 pt-2">
+                <button
+                  onClick={() => loadReviews(reviewsPage - 1)}
+                  disabled={reviewsPage <= 1}
+                  className="px-3 py-1 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40"
+                >
+                  上一页
+                </button>
+                <span className="text-sm text-gray-500">
+                  {reviewsPage} / {Math.ceil(reviewsTotal / 10)}
+                </span>
+                <button
+                  onClick={() => loadReviews(reviewsPage + 1)}
+                  disabled={reviewsPage >= Math.ceil(reviewsTotal / 10)}
+                  className="px-3 py-1 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40"
+                >
+                  下一页
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Tips */}

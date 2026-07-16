@@ -1,8 +1,8 @@
 import { Controller, Get } from "@midwayjs/core";
 
-@Controller("/api")
+@Controller("/")
 export class ApiController {
-  @Get("/health")
+  @Get("/api/health")
   async health() {
     return {
       status: "ok" as const,

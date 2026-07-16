@@ -640,6 +640,105 @@ paths:
                       isFavorited:
                         type: boolean
 
+  /api/items/{id}/reviews:
+    get:
+      operationId: listItemReviews
+      summary: 获取商品评价列表
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: pageSize
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+      responses:
+        "200":
+          description: 商品评价列表
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewPage"
+        "404":
+          description: 商品不存在
+
+  /api/orders/{id}/review:
+    post:
+      operationId: createOrderReview
+      summary: 对已完成订单发表评价
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateReviewInput"
+      responses:
+        "201":
+          description: 评价成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Review"
+        "400":
+          description: 输入无效或订单状态不允许评价
+        "401":
+          description: 未认证
+        "403":
+          description: 无权操作（仅买家）
+        "404":
+          description: 订单不存在
+        "409":
+          description: 已评价过
+
+  /api/reviews/{id}:
+    delete:
+      operationId: deleteReview
+      summary: 删除评价（仅评价作者）
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: 删除成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      success:
+                        type: boolean
+        "401":
+          description: 未认证
+        "403":
+          description: 无权操作
+        "404":
+          description: 评价不存在
+
   /api/admin/items:
     get:
       operationId: adminListItems
@@ -1188,3 +1287,61 @@ components:
           format: date-time
         item:
           $ref: "#/components/schemas/Item"
+
+    Review:
+      type: object
+      required: [id, orderId, itemId, buyerId, rating, content, createdAt]
+      properties:
+        id:
+          type: integer
+        orderId:
+          type: integer
+        itemId:
+          type: integer
+        buyerId:
+          type: integer
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        buyer:
+          type: object
+          properties:
+            id:
+              type: integer
+            username:
+              type: string
+
+    CreateReviewInput:
+      type: object
+      additionalProperties: false
+      required: [rating, content]
+      properties:
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        content:
+          type: string
+          minLength: 1
+          maxLength: 500
+
+    ReviewPage:
+      type: object
+      required: [data, total, page, pageSize]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Review"
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer

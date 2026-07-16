@@ -87,12 +87,28 @@ export class DatabaseService {
         UNIQUE(user_id, item_id)
       );
 
+      CREATE TABLE IF NOT EXISTS reviews (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        order_id INTEGER NOT NULL,
+        item_id INTEGER NOT NULL,
+        buyer_id INTEGER NOT NULL,
+        rating INTEGER NOT NULL CHECK(rating >= 1 AND rating <= 5),
+        content TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY (order_id) REFERENCES orders(id),
+        FOREIGN KEY (item_id) REFERENCES items(id),
+        FOREIGN KEY (buyer_id) REFERENCES users(id),
+        UNIQUE(order_id)
+      );
+
       CREATE INDEX IF NOT EXISTS idx_items_status ON items(status);
       CREATE INDEX IF NOT EXISTS idx_items_category ON items(category_id);
       CREATE INDEX IF NOT EXISTS idx_items_seller ON items(seller_id);
       CREATE INDEX IF NOT EXISTS idx_orders_buyer ON orders(buyer_id);
       CREATE INDEX IF NOT EXISTS idx_orders_item ON orders(item_id);
       CREATE INDEX IF NOT EXISTS idx_favorites_user ON favorites(user_id);
+      CREATE INDEX IF NOT EXISTS idx_reviews_item ON reviews(item_id);
+      CREATE INDEX IF NOT EXISTS idx_reviews_order ON reviews(order_id);
     `);
   }
 

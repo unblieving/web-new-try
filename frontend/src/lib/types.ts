@@ -87,6 +87,23 @@ export interface Favorite {
   item?: Item;
 }
 
+// --- Review ---
+export interface Review {
+  id: number;
+  orderId: number;
+  itemId: number;
+  buyerId: number;
+  rating: number;
+  content: string;
+  createdAt: string;
+  buyer?: { id: number; username: string };
+}
+
+export interface CreateReviewInput {
+  rating: number;
+  content: string;
+}
+
 // --- Pagination ---
 export interface PaginatedResult<T> {
   data: T[];

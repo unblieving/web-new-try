@@ -40,7 +40,16 @@ export interface TestDb {
   getUserById: (id: number) => any;
   getItemById: (id: number) => any;
   getOrderById: (id: number) => any;
+  createReview: (
+    orderId: number,
+    itemId: number,
+    buyerId: number,
+    rating?: number,
+    content?: string,
+  ) => number;
   getFavorite: (userId: number, itemId: number) => any;
+  getReviewByOrder: (orderId: number) => any;
+  getReviewsByItem: (itemId: number) => any[];
   countOrders: (itemId: number, status?: string) => number;
 }
 
@@ -108,6 +117,18 @@ export function createTestDb(): TestDb {
       )
     `);
 
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS reviews (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        order_id   INTEGER NOT NULL UNIQUE REFERENCES orders(id),
+        item_id    INTEGER NOT NULL REFERENCES items(id),
+        buyer_id   INTEGER NOT NULL REFERENCES users(id),
+        rating     INTEGER NOT NULL CHECK(rating BETWEEN 1 AND 5),
+        content    TEXT    NOT NULL,
+        created_at TEXT    NOT NULL DEFAULT (datetime('now'))
+      )
+    `);
+
     // Seed default categories
     const insertCat = db.prepare(
       "INSERT OR IGNORE INTO categories (name) VALUES (?)",
@@ -129,6 +150,7 @@ export function createTestDb(): TestDb {
   }
 
   function clear() {
+    db.exec("DELETE FROM reviews");
     db.exec("DELETE FROM orders");
     db.exec("DELETE FROM favorites");
     db.exec("DELETE FROM items");
@@ -229,6 +251,33 @@ export function createTestDb(): TestDb {
       .get(userId, itemId);
   }
 
+  function createReview(
+    orderId: number,
+    itemId: number,
+    buyerId: number,
+    rating = 5,
+    content = "Great item!",
+  ): number {
+    const result = db
+      .prepare(
+        "INSERT INTO reviews (order_id, item_id, buyer_id, rating, content) VALUES (?, ?, ?, ?, ?)",
+      )
+      .run(orderId, itemId, buyerId, rating, content);
+    return Number(result.lastInsertRowid);
+  }
+
+  function getReviewByOrder(orderId: number) {
+    return db
+      .prepare("SELECT * FROM reviews WHERE order_id = ?")
+      .get(orderId);
+  }
+
+  function getReviewsByItem(itemId: number) {
+    return db
+      .prepare("SELECT * FROM reviews WHERE item_id = ? ORDER BY created_at DESC")
+      .all(itemId);
+  }
+
   function countOrders(itemId: number, status?: string): number {
     if (status) {
       const row = db
@@ -253,10 +302,13 @@ export function createTestDb(): TestDb {
     createCategory,
     createItem,
     createOrder,
+    createReview,
     getUserById,
     getItemById,
     getOrderById,
     getFavorite,
+    getReviewByOrder,
+    getReviewsByItem,
     countOrders,
   };
 }
