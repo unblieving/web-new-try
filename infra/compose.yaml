@@ -3,6 +3,8 @@ services:
     build:
       context: ..
       dockerfile: infra/frontend.Dockerfile
+      platforms:
+        - linux/amd64
     environment:
       FRONTEND_PORT: 3000
       BACKEND_INTERNAL_URL: http://backend:7001
@@ -16,6 +18,8 @@ services:
     build:
       context: ..
       dockerfile: infra/backend.Dockerfile
+      platforms:
+        - linux/amd64
     environment:
       BACKEND_PORT: 7001
       DATABASE_PATH: /app/backend/data/course-demo.sqlite
