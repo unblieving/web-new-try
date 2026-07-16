@@ -96,7 +96,11 @@ function getItemReviews(
   return { data, total };
 }
 
-function deleteReview(reviewId: number, userId: number, userRole: string): void {
+function deleteReview(
+  reviewId: number,
+  userId: number,
+  userRole: string,
+): void {
   const review = tdb.db
     .prepare("SELECT * FROM reviews WHERE id = ?")
     .get(reviewId) as any;
@@ -117,7 +121,14 @@ test("createReview succeeds for a completed order", () => {
   const buyerId = tdb.createUser("buyer1");
   const catId = tdb.createCategory("Books");
   const itemId = tdb.createItem(sellerId, catId);
-  const orderId = tdb.createOrder(buyerId, itemId, "Test Item", 10, 1, "completed");
+  const orderId = tdb.createOrder(
+    buyerId,
+    itemId,
+    "Test Item",
+    10,
+    1,
+    "completed",
+  );
 
   const reviewId = createReview(orderId, itemId, buyerId, 5, "Excellent item!");
   assert.ok(reviewId > 0);
@@ -135,7 +146,10 @@ test("createReview rejects invalid rating (0)", () => {
   const itemId = tdb.createItem(sellerId, catId);
   const orderId = tdb.createOrder(buyerId, itemId, "Test", 10, 1, "completed");
 
-  assert.throws(() => createReview(orderId, itemId, buyerId, 0, "Bad"), /Rating must be/);
+  assert.throws(
+    () => createReview(orderId, itemId, buyerId, 0, "Bad"),
+    /Rating must be/,
+  );
 });
 
 test("createReview rejects invalid rating (6)", () => {
@@ -145,7 +159,10 @@ test("createReview rejects invalid rating (6)", () => {
   const itemId = tdb.createItem(sellerId, catId);
   const orderId = tdb.createOrder(buyerId, itemId, "Test", 10, 1, "completed");
 
-  assert.throws(() => createReview(orderId, itemId, buyerId, 6, "Too high"), /Rating must be/);
+  assert.throws(
+    () => createReview(orderId, itemId, buyerId, 6, "Too high"),
+    /Rating must be/,
+  );
 });
 
 test("createReview rejects empty content", () => {
@@ -155,7 +172,10 @@ test("createReview rejects empty content", () => {
   const itemId = tdb.createItem(sellerId, catId);
   const orderId = tdb.createOrder(buyerId, itemId, "Test", 10, 1, "completed");
 
-  assert.throws(() => createReview(orderId, itemId, buyerId, 3, ""), /content is required/);
+  assert.throws(
+    () => createReview(orderId, itemId, buyerId, 3, ""),
+    /content is required/,
+  );
 });
 
 test("createReview rejects content over 500 characters", () => {
@@ -308,7 +328,13 @@ test("createReview trims content whitespace", () => {
   const itemId = tdb.createItem(sellerId, catId);
   const orderId = tdb.createOrder(buyerId, itemId, "Test", 10, 1, "completed");
 
-  const reviewId = createReview(orderId, itemId, buyerId, 4, "  Trimmed content  ");
+  const reviewId = createReview(
+    orderId,
+    itemId,
+    buyerId,
+    4,
+    "  Trimmed content  ",
+  );
   const review = tdb.getReviewByOrder(orderId);
   assert.equal(review.content, "Trimmed content");
 });

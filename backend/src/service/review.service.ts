@@ -34,7 +34,11 @@ export class ReviewService {
    * Only the buyer can review, and only after the order is completed.
    * Each order can only have one review.
    */
-  createReview(buyerId: number, orderId: number, input: CreateReviewInput): Review {
+  createReview(
+    buyerId: number,
+    orderId: number,
+    input: CreateReviewInput,
+  ): Review {
     // Validate rating
     const rating = Math.floor(input.rating);
     if (!Number.isInteger(rating) || rating < 1 || rating > 5) {

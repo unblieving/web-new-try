@@ -274,14 +274,14 @@ export function createTestDb(): TestDb {
   }
 
   function getReviewByOrder(orderId: number) {
-    return db
-      .prepare("SELECT * FROM reviews WHERE order_id = ?")
-      .get(orderId);
+    return db.prepare("SELECT * FROM reviews WHERE order_id = ?").get(orderId);
   }
 
   function getReviewsByItem(itemId: number) {
     return db
-      .prepare("SELECT * FROM reviews WHERE item_id = ? ORDER BY created_at DESC")
+      .prepare(
+        "SELECT * FROM reviews WHERE item_id = ? ORDER BY created_at DESC",
+      )
       .all(itemId);
   }
 

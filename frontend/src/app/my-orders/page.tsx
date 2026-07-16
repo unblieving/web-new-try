@@ -364,7 +364,10 @@ export default function MyOrdersPage() {
                           }}
                           className="px-4 py-2 bg-gradient-to-r from-yellow-400 to-orange-400 text-white rounded-xl text-xs font-medium hover:from-yellow-500 hover:to-orange-500 shadow-sm transition-all"
                         >
-                          ⭐ {reviewingOrderId === order.id ? "收起评价" : "写评价"}
+                          ⭐{" "}
+                          {reviewingOrderId === order.id
+                            ? "收起评价"
+                            : "写评价"}
                         </button>
                       )}
                     </>
@@ -411,7 +414,9 @@ export default function MyOrdersPage() {
                       </p>
                       {/* Rating */}
                       <div className="flex items-center gap-1 mb-3">
-                        <span className="text-sm text-gray-500 mr-2">评分:</span>
+                        <span className="text-sm text-gray-500 mr-2">
+                          评分:
+                        </span>
                         {[1, 2, 3, 4, 5].map((star) => (
                           <button
                             key={star}

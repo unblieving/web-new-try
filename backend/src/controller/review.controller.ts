@@ -76,7 +76,11 @@ export class ReviewController {
         if (msg.includes("已评价")) {
           throw new httpError.ConflictError(msg);
         }
-        if (msg.includes("已完成") || msg.includes("评分") || msg.includes("内容")) {
+        if (
+          msg.includes("已完成") ||
+          msg.includes("评分") ||
+          msg.includes("内容")
+        ) {
           throw new httpError.BadRequestError(msg);
         }
         throw new httpError.BadRequestError(msg);

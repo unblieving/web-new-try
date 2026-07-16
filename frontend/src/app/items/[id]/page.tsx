@@ -318,13 +318,22 @@ export default function ItemDetailPage() {
       {/* Reviews */}
       <div className="mt-6 bg-white rounded-2xl border border-blue-100/60 shadow-sm p-6">
         <h2 className="text-lg font-bold text-gray-800 mb-4">
-          ⭐ 用户评价 {reviewsTotal > 0 && <span className="text-sm font-normal text-gray-400">({reviewsTotal}条)</span>}
+          ⭐ 用户评价{" "}
+          {reviewsTotal > 0 && (
+            <span className="text-sm font-normal text-gray-400">
+              ({reviewsTotal}条)
+            </span>
+          )}
         </h2>
 
         {reviewsLoading ? (
-          <p className="text-sm text-gray-400 py-4 text-center">加载评价中...</p>
+          <p className="text-sm text-gray-400 py-4 text-center">
+            加载评价中...
+          </p>
         ) : reviews.length === 0 ? (
-          <p className="text-sm text-gray-400 py-4 text-center">暂无评价，购买后来评价吧~</p>
+          <p className="text-sm text-gray-400 py-4 text-center">
+            暂无评价，购买后来评价吧~
+          </p>
         ) : (
           <div className="space-y-4">
             {reviews.map((review) => (
