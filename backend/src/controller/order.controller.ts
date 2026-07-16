@@ -104,6 +104,26 @@ export class OrderController {
     }
   }
 
+  @Post("/:id/ship")
+  async ship(@Param("id") id: string) {
+    const { userId } = getAuthState(this.ctx);
+    try {
+      const order = this.orderService.sellerConfirm(parseInt(id, 10), userId);
+      return { data: order };
+    } catch (err) {
+      if (err instanceof Error) {
+        if (err.message.includes("不存在")) {
+          throw new httpError.NotFoundError(err.message);
+        }
+        if (err.message.includes("无权")) {
+          throw new httpError.ForbiddenError(err.message);
+        }
+        throw new httpError.BadRequestError(err.message);
+      }
+      throw err;
+    }
+  }
+
   @Post("/:id/confirm")
   async confirm(@Param("id") id: string) {
     const { userId } = getAuthState(this.ctx);

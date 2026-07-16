@@ -3,13 +3,21 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { cancelOrder, confirmOrder, getMyOrders, payOrder } from "@/lib/api";
+import {
+  cancelOrder,
+  confirmOrder,
+  getMyOrders,
+  getSoldOrders,
+  payOrder,
+  shipOrder,
+} from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import type { Order } from "@/lib/types";
 
 const STATUS_LABELS: Record<string, string> = {
   pending_payment: "待付款",
   paid: "已付款",
+  shipped: "已发货",
   completed: "已完成",
   cancelled: "已取消",
 };
@@ -17,6 +25,7 @@ const STATUS_LABELS: Record<string, string> = {
 const STATUS_COLORS: Record<string, string> = {
   pending_payment: "bg-amber-50 text-amber-600 border-amber-200",
   paid: "bg-blue-50 text-blue-600 border-blue-200",
+  shipped: "bg-purple-50 text-purple-600 border-purple-200",
   completed: "bg-emerald-50 text-emerald-600 border-emerald-200",
   cancelled: "bg-gray-50 text-gray-500 border-gray-200",
 };
@@ -24,13 +33,17 @@ const STATUS_COLORS: Record<string, string> = {
 const STATUS_ICONS: Record<string, string> = {
   pending_payment: "💳",
   paid: "✅",
+  shipped: "🚚",
   completed: "🎉",
   cancelled: "❌",
 };
 
+type Tab = "buy" | "sell";
+
 export default function MyOrdersPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const [tab, setTab] = useState<Tab>("buy");
   const [orders, setOrders] = useState<Order[]>([]);
   const [statusFilter, setStatusFilter] = useState("");
   const [loading, setLoading] = useState(true);
@@ -42,16 +55,25 @@ export default function MyOrdersPage() {
   const loadOrders = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await getMyOrders({
-        status: statusFilter || undefined,
-      });
-      setOrders(result);
+      if (tab === "buy") {
+        const result = await getMyOrders({
+          status: statusFilter || undefined,
+        });
+        setOrders(result);
+      } else {
+        const result = await getSoldOrders();
+        setOrders(
+          statusFilter
+            ? result.filter((o) => o.status === statusFilter)
+            : result,
+        );
+      }
     } catch {
       /* ignore */
     } finally {
       setLoading(false);
     }
-  }, [statusFilter]);
+  }, [tab, statusFilter]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- Load orders
@@ -68,6 +90,19 @@ export default function MyOrdersPage() {
     try {
       await payOrder(id);
       setActionMsg("付款成功");
+      setActionMsgType("success");
+      await loadOrders();
+    } catch (err) {
+      setActionMsg(err instanceof Error ? err.message : "操作失败");
+      setActionMsgType("error");
+    }
+  }
+
+  async function handleShip(id: number) {
+    setActionMsg("");
+    try {
+      await shipOrder(id);
+      setActionMsg("已确认发货");
       setActionMsgType("success");
       await loadOrders();
     } catch (err) {
@@ -112,6 +147,36 @@ export default function MyOrdersPage() {
         <p className="text-sm text-gray-400 mt-1">查看和管理你的所有订单</p>
       </div>
 
+      {/* Tabs */}
+      <div className="flex gap-2 mb-6">
+        <button
+          onClick={() => {
+            setTab("buy");
+            setStatusFilter("");
+          }}
+          className={`px-5 py-2 rounded-xl text-sm font-medium transition-all ${
+            tab === "buy"
+              ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-sm"
+              : "border border-blue-200 text-gray-600 hover:bg-blue-50"
+          }`}
+        >
+          🛍️ 我的购买
+        </button>
+        <button
+          onClick={() => {
+            setTab("sell");
+            setStatusFilter("");
+          }}
+          className={`px-5 py-2 rounded-xl text-sm font-medium transition-all ${
+            tab === "sell"
+              ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-sm"
+              : "border border-blue-200 text-gray-600 hover:bg-blue-50"
+          }`}
+        >
+          📦 我的出售
+        </button>
+      </div>
+
       {/* Filter */}
       <div className="mb-6">
         <select
@@ -124,6 +189,7 @@ export default function MyOrdersPage() {
           <option value="">📋 全部状态</option>
           <option value="pending_payment">💳 待付款</option>
           <option value="paid">✅ 已付款</option>
+          <option value="shipped">🚚 已发货</option>
           <option value="completed">🎉 已完成</option>
           <option value="cancelled">❌ 已取消</option>
         </select>
@@ -151,11 +217,17 @@ export default function MyOrdersPage() {
         </div>
       ) : orders.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-2xl border border-blue-100/60">
-          <div className="text-5xl mb-3">🛒</div>
+          <div className="text-5xl mb-3">
+            {tab === "buy" ? "🛒" : "📦"}
+          </div>
           <p className="text-gray-400 text-sm mb-4">
-            {statusFilter ? "该状态下暂无订单" : "你还没有任何订单"}
+            {statusFilter
+              ? "该状态下暂无订单"
+              : tab === "buy"
+                ? "你还没有任何购买订单"
+                : "你还没有任何出售订单"}
           </p>
-          {!statusFilter && (
+          {!statusFilter && tab === "buy" && (
             <Link
               href="/"
               className="inline-block bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-6 py-2.5 rounded-xl text-sm font-medium hover:from-blue-600 hover:to-indigo-600 shadow-sm transition-all"
@@ -210,29 +282,77 @@ export default function MyOrdersPage() {
 
                 {/* Actions */}
                 <div className="flex gap-2 flex-shrink-0 ml-4">
-                  {order.status === "pending_payment" && (
+                  {tab === "buy" && (
                     <>
-                      <button
-                        onClick={() => handlePay(order.id)}
-                        className="px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl text-xs font-medium hover:from-blue-600 hover:to-indigo-600 shadow-sm transition-all"
-                      >
-                        💳 模拟付款
-                      </button>
-                      <button
-                        onClick={() => handleCancel(order.id)}
-                        className="px-4 py-2 border border-gray-200 text-gray-600 rounded-xl text-xs hover:bg-gray-50 transition-colors"
-                      >
-                        取消
-                      </button>
+                      {order.status === "pending_payment" && (
+                        <>
+                          <button
+                            onClick={() => handlePay(order.id)}
+                            className="px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl text-xs font-medium hover:from-blue-600 hover:to-indigo-600 shadow-sm transition-all"
+                          >
+                            💳 模拟付款
+                          </button>
+                          <button
+                            onClick={() => handleCancel(order.id)}
+                            className="px-4 py-2 border border-gray-200 text-gray-600 rounded-xl text-xs hover:bg-gray-50 transition-colors"
+                          >
+                            取消
+                          </button>
+                        </>
+                      )}
+                      {order.status === "paid" && (
+                        <button
+                          onClick={() => handleCancel(order.id)}
+                          className="px-4 py-2 border border-gray-200 text-gray-600 rounded-xl text-xs hover:bg-gray-50 transition-colors"
+                        >
+                          取消订单
+                        </button>
+                      )}
+                      {order.status === "shipped" && (
+                        <>
+                          <button
+                            onClick={() => handleConfirm(order.id)}
+                            className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-xl text-xs font-medium hover:from-emerald-600 hover:to-green-600 shadow-sm transition-all"
+                          >
+                            ✅ 确认收货
+                          </button>
+                          <button
+                            onClick={() => handleCancel(order.id)}
+                            className="px-4 py-2 border border-gray-200 text-gray-600 rounded-xl text-xs hover:bg-gray-50 transition-colors"
+                          >
+                            取消
+                          </button>
+                        </>
+                      )}
                     </>
                   )}
-                  {order.status === "paid" && (
-                    <button
-                      onClick={() => handleConfirm(order.id)}
-                      className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-xl text-xs font-medium hover:from-emerald-600 hover:to-green-600 shadow-sm transition-all"
-                    >
-                      ✅ 确认收货
-                    </button>
+                  {tab === "sell" && (
+                    <>
+                      {order.status === "paid" && (
+                        <>
+                          <button
+                            onClick={() => handleShip(order.id)}
+                            className="px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-xl text-xs font-medium hover:from-purple-600 hover:to-indigo-600 shadow-sm transition-all"
+                          >
+                            🚚 确认发货
+                          </button>
+                          <button
+                            onClick={() => handleCancel(order.id)}
+                            className="px-4 py-2 border border-gray-200 text-gray-600 rounded-xl text-xs hover:bg-gray-50 transition-colors"
+                          >
+                            取消
+                          </button>
+                        </>
+                      )}
+                      {order.status === "shipped" && (
+                        <button
+                          onClick={() => handleCancel(order.id)}
+                          className="px-4 py-2 border border-gray-200 text-gray-600 rounded-xl text-xs hover:bg-gray-50 transition-colors"
+                        >
+                          取消订单
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
               </div>

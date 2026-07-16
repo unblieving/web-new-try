@@ -176,6 +176,13 @@ export async function payOrder(id: number): Promise<Order> {
   return res.data;
 }
 
+export async function shipOrder(id: number): Promise<Order> {
+  const res = await request<{ data: Order }>(`/api/orders/${id}/ship`, {
+    method: "POST",
+  });
+  return res.data;
+}
+
 export async function confirmOrder(id: number): Promise<Order> {
   const res = await request<{ data: Order }>(`/api/orders/${id}/confirm`, {
     method: "POST",
@@ -187,6 +194,11 @@ export async function cancelOrder(id: number): Promise<Order> {
   const res = await request<{ data: Order }>(`/api/orders/${id}/cancel`, {
     method: "POST",
   });
+  return res.data;
+}
+
+export async function getSoldOrders(): Promise<Order[]> {
+  const res = await request<{ data: Order[] }>("/api/orders/sold");
   return res.data;
 }
 

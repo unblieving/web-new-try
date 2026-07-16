@@ -127,6 +127,34 @@ export class OrderService {
     return this.findById(orderId)!;
   }
 
+  /**
+   * Seller confirms order / ships → paid → shipped.
+   */
+  sellerConfirm(orderId: number, userId: number): Order {
+    const order = this.findById(orderId);
+    if (!order) {
+      throw new Error("订单不存在");
+    }
+    const item = this.itemService.findById(order.itemId);
+    if (!item || item.sellerId !== userId) {
+      throw new Error("无权操作此订单");
+    }
+    if (order.status !== "paid") {
+      throw new Error("只有已付款的订单可以确认发货");
+    }
+
+    this.db
+      .prepare(
+        "UPDATE orders SET status = 'shipped', updated_at = datetime('now') WHERE id = ?",
+      )
+      .run(orderId);
+
+    return this.findById(orderId)!;
+  }
+
+  /**
+   * Buyer confirms receipt → shipped → completed, item marked sold.
+   */
   confirmReceipt(orderId: number, buyerId: number): Order {
     const order = this.findById(orderId);
     if (!order) {
@@ -135,8 +163,8 @@ export class OrderService {
     if (order.buyerId !== buyerId) {
       throw new Error("无权操作他人订单");
     }
-    if (order.status !== "paid") {
-      throw new Error("订单状态不允许确认收货");
+    if (order.status !== "shipped") {
+      throw new Error("只有已发货的订单可以确认收货");
     }
 
     this.db.exec("BEGIN IMMEDIATE");
@@ -161,16 +189,26 @@ export class OrderService {
     }
   }
 
-  cancelOrder(orderId: number, buyerId: number): Order {
+  /**
+   * Cancel an order — buyer or seller can cancel.
+   * Releases reserved stock.
+   */
+  cancelOrder(orderId: number, userId: number): Order {
     const order = this.findById(orderId);
     if (!order) {
       throw new Error("订单不存在");
     }
-    if (order.buyerId !== buyerId) {
-      throw new Error("无权操作他人订单");
+    // Both buyer and seller can cancel
+    const item = this.itemService.findById(order.itemId);
+    if (order.buyerId !== userId && (!item || item.sellerId !== userId)) {
+      throw new Error("无权操作此订单");
     }
-    if (order.status !== "pending_payment") {
-      throw new Error("只能取消待支付订单");
+    if (
+      order.status !== "pending_payment" &&
+      order.status !== "paid" &&
+      order.status !== "shipped"
+    ) {
+      throw new Error("当前订单状态不可取消");
     }
 
     this.db.exec("BEGIN IMMEDIATE");
@@ -181,7 +219,7 @@ export class OrderService {
         )
         .run(orderId);
 
-      // Release stock
+      // Release stock (stock was deducted at order creation)
       this.itemService.releaseStock(order.itemId, order.quantity);
 
       this.db.exec("COMMIT");

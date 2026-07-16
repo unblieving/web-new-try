@@ -1,0 +1,12 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "noEmit": true,
+    "types": ["node"],
+    "typeRoots": ["../../node_modules/@types"],
+    "allowImportingTsExtensions": true
+  },
+  "include": ["./**/*.mts"],
+  "exclude": ["../node_modules", "../dist"]
+}

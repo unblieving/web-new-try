@@ -63,7 +63,7 @@ export interface ItemListQuery {
 
 // --- Order ---
 export type OrderStatus =
-  "pending_payment" | "paid" | "completed" | "cancelled";
+  "pending_payment" | "paid" | "shipped" | "completed" | "cancelled";
 
 export interface Order {
   id: number;
